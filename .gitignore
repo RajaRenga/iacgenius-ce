@@ -13,3 +13,7 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+# iacg desk local settings + data
+iacg-data/
+profiles/*/plugins/*/local.json
+profiles/*/dashboard-plugins/*/local.json

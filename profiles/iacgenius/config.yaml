@@ -13,10 +13,11 @@ display:
   show_reasoning: false
 streaming:
   enabled: false
-# The iacg-desk plugin and iacg-board tab are built on the instance from BUILD-BRIEF.md,
-# then enabled here. Start empty so the first boot does not reference plugins that do not exist yet.
+# The iacg-desk plugin is built (profiles/iacgenius/plugins/iacg-desk); the iacg-board tab
+# lives in dashboard-plugins/ and is discovered by the dashboard.
 plugins:
-  enabled: []
+  enabled:
+    - iacg-desk
 platform_toolsets:
   cli: [skills, clarify, file]
 kanban:

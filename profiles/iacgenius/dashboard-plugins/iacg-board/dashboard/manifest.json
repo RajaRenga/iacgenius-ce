@@ -1,0 +1,14 @@
+{
+  "name": "iacg-board",
+  "label": "IaC Board",
+  "description": "IaC Genius mission board: findings, evidence with tool+version, repair attempts spent/allowed, disposition and next owner, served from the snapshot the desk writes.",
+  "icon": "LayoutDashboard",
+  "version": "0.1.0",
+  "tab": {
+    "path": "/iacg-board",
+    "position": "after:kanban"
+  },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}

@@ -19,7 +19,11 @@ unzip -o "terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -d /usr/local/bin
 curl -fsSLO "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip"
 unzip -o tflint_linux_amd64.zip -d /usr/local/bin
 
-python3 -m pip install --quiet "checkov==${CHECKOV_VERSION}"
+# checkov in an isolated venv: AL2023 system python has rpm-managed packages pip cannot upgrade.
+python3 -m venv /opt/iacg/venv
+/opt/iacg/venv/bin/pip install --quiet --upgrade pip
+/opt/iacg/venv/bin/pip install --quiet "checkov==${CHECKOV_VERSION}"
+ln -sf /opt/iacg/venv/bin/checkov /usr/local/bin/checkov
 
 printf 'export TF_PLUGIN_CACHE_DIR=%s\n' "$CACHE_DIR" >/etc/profile.d/iacg-cache.sh
 echo "toolchain ready:"
