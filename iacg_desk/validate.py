@@ -131,6 +131,9 @@ def run(store, mid, tree=None, runner=None, which=shutil.which):
     attempt = mission["attempts_spent"] + 1
     cache = store.data_dir / "plugins"
     cache.mkdir(parents=True, exist_ok=True)
+    # plugin-dir must differ from the cache dir, else init refuses to "install a provider to itself".
+    plug = store.data_dir / "plugin-work"
+    plug.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, TF_PLUGIN_CACHE_DIR=str(cache), TF_IN_AUTOMATION="1", CHECKPOINT_DISABLE="1")
     packets = []
 
@@ -149,9 +152,9 @@ def run(store, mid, tree=None, runner=None, which=shutil.which):
                        [_finding(f"fmt:{i}", f"not formatted: {name.strip()}", "low", name.strip())
                         for i, name in enumerate(out.splitlines()) if name.strip()] if rc else None,
                        exit_code=rc))
-        # init: shared provider cache as a plugin dir => registry off, no per-mission downloads.
+        # init: shared provider cache, separate plugin dir => registry off, no per-mission downloads.
         rc, out, err = runner([binary, f"-chdir={tree}", "init", "-backend=false", "-input=false",
-                               f"-plugin-dir={cache}"], str(tree), env)
+                               f"-plugin-dir={plug}"], str(tree), env)
         if rc != 0:
             record(_packet(mid, attempt, "validate", "NOT_RUN", binary, tf_version,
                            not_run_reason=f"init failed (exit {rc}): {(err or out).strip()[-300:]}"))
