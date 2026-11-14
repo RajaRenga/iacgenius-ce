@@ -189,6 +189,9 @@ def install_desk_code():
     shutil.copytree(SOURCE / 'iacg_desk', dst, ignore=shutil.ignore_patterns('__pycache__'))
     run('chown', '-R', f'{UID}:{UID}', '/opt/iacg')
     run('chmod', '-R', 'u+rwX,go+rX', '/opt/iacg')
+    # The provider cache must be writable by the desk user (a root-owned plugins dir blocks init).
+    (DESK_HOME / 'plugins').mkdir(parents=True, exist_ok=True)
+    run('chown', '-R', f'{UID}:{UID}', str(DESK_HOME))
 
 
 def desk_unit():
