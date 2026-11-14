@@ -14,7 +14,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SPOT_PARTS = ["profiles/iacgenius", "deploy/aws-single/host.py",
+SPOT_PARTS = ["profiles/iacgenius", "iacg_desk", "deploy/aws-single/host.py",
               "deploy/aws-single/install-terraform-guidance.sh", "toolchain/install-toolchain.sh",
               "contracts", "LICENSE", "NOTICE"]
 SKIP = {"__pycache__", ".terraform", ".pytest_cache"}

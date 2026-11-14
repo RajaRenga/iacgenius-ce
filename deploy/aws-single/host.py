@@ -2,8 +2,8 @@
 
 Borrows the RemediGenius-CE boot mechanics: disposable instance, S3 holds the durable Hermes
 home, the pinned Hermes image runs with no AWS credentials, the model key comes from Secrets
-Manager. Unlike RGCE there is no prebuilt desk: Hermes builds the iacg desk on the instance
-from the profile's BUILD-BRIEF.md. Generation needs no AWS read credentials.
+Manager. The stdlib-only iacg desk runs as a systemd service on the host; Hermes reaches it
+through the Unix socket mounted into the container. Generation needs no AWS read credentials.
 """
 import json
 import os
@@ -18,6 +18,9 @@ SOURCE = ROOT / 'source'
 PACKAGE = ROOT / 'package'
 UID = 10000
 HERMES_HOME = Path('/data/hermes')
+DESK_HOME = Path('/data/iacg')
+DESK_RUNDIR = Path('/run/iacg')
+DESK_SOCKET = DESK_RUNDIR / 'desk.sock'
 PROFILE = 'iacgenius'
 CONTAINER = 'iacgenius'
 NETWORK = 'iacgenius'
@@ -44,18 +47,24 @@ def durable_url(cfg):
 
 
 def restore_state(cfg):
-    HERMES_HOME.mkdir(parents=True, exist_ok=True)
-    if any(HERMES_HOME.iterdir()):
-        print('Hermes home already present; not restoring over it')
-        return
-    archive = ROOT / 'hermes-state.tar.gz'
-    got = subprocess.run(['aws', 's3', 'cp', f"{durable_url(cfg)}/hermes.tar.gz", str(archive),
-                          '--region', cfg['region'], '--only-show-errors'], capture_output=True, text=True)
-    if got.returncode == 0 and archive.exists():
-        run('tar', '-xzf', str(archive), '-C', str(HERMES_HOME))
-        print('restored Hermes home from S3')
-    else:
-        print('no prior Hermes state in S3; starting fresh')
+    for home, name in ((HERMES_HOME, 'hermes'), (DESK_HOME, 'iacg')):
+        home.mkdir(parents=True, exist_ok=True)
+        os.chown(home, UID, UID)
+        if any(home.iterdir()):
+            print(f'{name} state already present; not restoring over it')
+            continue
+        archive = ROOT / f'{name}-state.tar.gz'
+        got = subprocess.run(['aws', 's3', 'cp', f"{durable_url(cfg)}/{name}.tar.gz", str(archive),
+                              '--region', cfg['region'], '--only-show-errors'], capture_output=True, text=True)
+        if got.returncode == 0 and archive.exists():
+            run('tar', '-xzf', str(archive), '-C', str(home))
+            if home == DESK_HOME:
+                run('chown', '-R', f'{UID}:{UID}', str(home))
+            print(f'restored {name} state from S3')
+        else:
+            print(f'no prior {name} state in S3; starting fresh')
+    DESK_RUNDIR.mkdir(parents=True, exist_ok=True)
+    os.chown(DESK_RUNDIR, UID, UID)
 
 
 def network():
@@ -149,22 +158,58 @@ def sync_profile():
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns('__pycache__', 'local.json'))
-    for path in [profile, *profile.rglob('*')]:
+    (profile / 'plugins' / 'iacg-desk' / 'local.json').write_text(json.dumps(
+        {'socket': DESK_SOCKET.as_posix(), 'home': DESK_HOME.as_posix()}))
+    board_local = json.dumps({'socket': DESK_SOCKET.as_posix(), 'board': (DESK_HOME / 'board.html').as_posix(),
+                              'status': (DESK_HOME / 'board.json').as_posix()})
+    (profile / 'dashboard-plugins' / 'iacg-board' / 'local.json').write_text(board_local)
+    # Hermes serves user dashboard plugins from the home plugins dir too (mirror RGCE).
+    tab = HERMES_HOME / 'plugins' / 'iacg-board'
+    if tab.exists():
+        shutil.rmtree(tab)
+    shutil.copytree(package / 'dashboard-plugins' / 'iacg-board', tab,
+                    ignore=shutil.ignore_patterns('__pycache__', 'local.json'))
+    (tab / 'local.json').write_text(board_local)
+    for path in [profile, *profile.rglob('*'), tab, *tab.rglob('*')]:
         if hasattr(os, 'lchown'):
             os.lchown(path, UID, UID)
         if not path.is_symlink():
             path.chmod(0o755 if path.is_dir() else (0o600 if path.name == '.env' else 0o644))
 
 
+def desk_unit():
+    return f'''[Unit]
+Description=IaC Genius CE desk (stdlib only, Unix socket API, no AWS credentials)
+After=network-online.target
+[Service]
+User={UID}
+Group={UID}
+Environment=PYTHONPATH={SOURCE.as_posix()}
+Environment=IACG_HOME={DESK_HOME.as_posix()}
+Environment=TF_PLUGIN_CACHE_DIR={DESK_HOME.as_posix()}/plugins
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+RuntimeDirectory=iacg
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/python3 -m iacg_desk serve --socket {DESK_SOCKET.as_posix()}
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+'''
+
+
 def hermes_unit(cfg):
     memory = int(cfg.get('container_memory_mb', 6144))
     return f'''[Unit]
 Description=IaC Genius CE Hermes (pinned image, no AWS credentials)
-After=docker.service
+After=docker.service iacg-desk.service
+Wants=iacg-desk.service
 Requires=docker.service
 [Service]
+ExecStartPre=/bin/sh -c 'n=0; while [ ! -S {DESK_SOCKET.as_posix()} ] && [ $$n -lt 60 ]; do n=$$((n+1)); sleep 1; done; exit 0'
 ExecStartPre=-/usr/bin/docker rm -f {CONTAINER}
-ExecStart=/usr/bin/docker run --rm --name {CONTAINER} --network {NETWORK} --env-file {RUNDIR.as_posix()}/hermes.env -p 127.0.0.1:{PORT}:{PORT} -v {HERMES_HOME.as_posix()}:/opt/data -v {PACKAGE.as_posix()}:/opt/iacgenius-package:ro --memory {memory}m --pids-limit 1024 {cfg['image']} gateway run
+ExecStart=/usr/bin/docker run --rm --name {CONTAINER} --network {NETWORK} --env-file {RUNDIR.as_posix()}/hermes.env -p 127.0.0.1:{PORT}:{PORT} -v {HERMES_HOME.as_posix()}:/opt/data -v {DESK_RUNDIR.as_posix()}:{DESK_RUNDIR.as_posix()} -v {DESK_HOME.as_posix()}:{DESK_HOME.as_posix()}:ro -v {PACKAGE.as_posix()}:/opt/iacgenius-package:ro --memory {memory}m --pids-limit 1024 {cfg['image']} gateway run
 ExecStop=/usr/bin/docker stop -t 30 {CONTAINER}
 Restart=always
 RestartSec=10
@@ -177,6 +222,8 @@ CHECKPOINT = '''#!/bin/bash
 set -euo pipefail
 tar -czf /opt/iacgenius/hermes-state.tar.gz -C /data/hermes .
 aws s3 cp /opt/iacgenius/hermes-state.tar.gz s3://__BUCKET__/state/hermes.tar.gz --region __REGION__ --only-show-errors
+tar -czf /opt/iacgenius/iacg-state.tar.gz -C /data/iacg .
+aws s3 cp /opt/iacgenius/iacg-state.tar.gz s3://__BUCKET__/state/iacg.tar.gz --region __REGION__ --only-show-errors
 '''
 
 
@@ -186,7 +233,7 @@ def checkpoint_units(cfg):
     script.chmod(0o755)
     return {
         'iacgenius-checkpoint.service': f'''[Unit]
-Description=IaC Genius CE Hermes home checkpoint to S3
+Description=IaC Genius CE Hermes home + desk state checkpoint to S3
 [Service]
 Type=oneshot
 ExecStart={script.as_posix()}
@@ -215,11 +262,18 @@ def main():
     shutil.copytree(SOURCE / 'profiles' / PROFILE, PACKAGE, ignore=shutil.ignore_patterns('__pycache__'))
     config = PACKAGE / 'config.yaml'
     config.write_text(seed_model(config.read_text(), (cfg['model_name'], cfg['model_base_url']) if model_key else None))
-    units = {'iacgenius-hermes.service': hermes_unit(cfg), **checkpoint_units(cfg)}
+    units = {'iacg-desk.service': desk_unit(), 'iacgenius-hermes.service': hermes_unit(cfg), **checkpoint_units(cfg)}
     for name, body in units.items():
         Path('/etc/systemd/system', name).write_text(body)
     run('systemctl', 'daemon-reload')
-    run('systemctl', 'enable', 'iacgenius-hermes.service', 'iacgenius-checkpoint.timer')
+    run('systemctl', 'enable', 'iacg-desk.service', 'iacgenius-hermes.service', 'iacgenius-checkpoint.timer')
+    run('systemctl', 'restart', 'iacg-desk.service')
+    for _ in range(60):
+        if DESK_SOCKET.exists():
+            break
+        time.sleep(1)
+    else:
+        raise RuntimeError('iacg-desk did not start; check journalctl -u iacg-desk')
     run('systemctl', 'restart', 'iacgenius-hermes.service')
     for _ in range(120):
         if in_container('test', '-f', '/opt/data/config.yaml', check=False, capture_output=True).returncode == 0:
@@ -236,7 +290,7 @@ def main():
     run('docker', 'restart', CONTAINER)
     run('systemctl', 'start', 'iacgenius-checkpoint.timer')
     print('IaC Genius CE ready. Dashboard: SSM tunnel to 127.0.0.1:%d; login in %s.' % (PORT, LOGIN))
-    print('Next: open the dashboard, say "read BUILD-BRIEF.md and start building", and let Hermes assemble the iacg desk.')
+    print('Next: open the dashboard, say "read BUILD-BRIEF.md and start building"; the iacg desk is already running.')
 
 
 if __name__ == '__main__':
