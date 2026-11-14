@@ -177,6 +177,20 @@ def sync_profile():
             path.chmod(0o755 if path.is_dir() else (0o600 if path.name == '.env' else 0o644))
 
 
+DESK_CODE = Path('/opt/iacg/src')
+
+
+def install_desk_code():
+    # /opt/iacgenius is 0700 root; the desk (uid 10000) needs its code in a readable place.
+    DESK_CODE.mkdir(parents=True, exist_ok=True)
+    dst = DESK_CODE / 'iacg_desk'
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(SOURCE / 'iacg_desk', dst, ignore=shutil.ignore_patterns('__pycache__'))
+    run('chown', '-R', f'{UID}:{UID}', '/opt/iacg')
+    run('chmod', '-R', 'u+rwX,go+rX', '/opt/iacg')
+
+
 def desk_unit():
     return f'''[Unit]
 Description=IaC Genius CE desk (stdlib only, Unix socket API, no AWS credentials)
@@ -184,7 +198,7 @@ After=network-online.target
 [Service]
 User={UID}
 Group={UID}
-Environment=PYTHONPATH={SOURCE.as_posix()}
+Environment=PYTHONPATH={DESK_CODE.as_posix()}
 Environment=IACG_HOME={DESK_HOME.as_posix()}
 Environment=TF_PLUGIN_CACHE_DIR={DESK_HOME.as_posix()}/plugins
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
@@ -262,6 +276,7 @@ def main():
     shutil.copytree(SOURCE / 'profiles' / PROFILE, PACKAGE, ignore=shutil.ignore_patterns('__pycache__'))
     config = PACKAGE / 'config.yaml'
     config.write_text(seed_model(config.read_text(), (cfg['model_name'], cfg['model_base_url']) if model_key else None))
+    install_desk_code()
     units = {'iacg-desk.service': desk_unit(), 'iacgenius-hermes.service': hermes_unit(cfg), **checkpoint_units(cfg)}
     for name, body in units.items():
         Path('/etc/systemd/system', name).write_text(body)
