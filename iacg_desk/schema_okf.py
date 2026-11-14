@@ -42,11 +42,9 @@ def extract(store, provider, version, iac_tool="terraform", runner=None, which=s
         cache.mkdir(parents=True, exist_ok=True)
         import os
         env = dict(os.environ, TF_PLUGIN_CACHE_DIR=str(cache), TF_IN_AUTOMATION="1", CHECKPOINT_DISABLE="1")
-        # plugin-dir must differ from the cache dir (else init installs a provider to itself) and must exist.
-        plug = Path(tmp) / 'plugins'
-        plug.mkdir(parents=True, exist_ok=True)
-        rc, out, err = runner([binary, f"-chdir={tmp}", "init", "-backend=false", "-input=false",
-                               f"-plugin-dir={plug}"], tmp, env)
+        # Use the shared provider cache: init symlinks from it on Linux (no per-mission copy). Do NOT pass
+        # -plugin-dir — it disables cache-based installation and demands the provider already be in that dir.
+        rc, out, err = runner([binary, f"-chdir={tmp}", "init", "-backend=false", "-input=false"], tmp, env)
         if rc == 0:
             rc, out, err = runner([binary, f"-chdir={tmp}", "providers", "schema", "-json"], tmp, env)
         if rc != 0:

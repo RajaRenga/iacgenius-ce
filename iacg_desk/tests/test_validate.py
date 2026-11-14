@@ -15,7 +15,7 @@ def make_runner(calls, checkov_rc=0):
         if "fmt" in args:
             return 0, "", ""
         if "init" in args:
-            assert any(a.startswith("-plugin-dir=") for a in args)  # registry off
+            assert "-backend=false" in args  # no remote state; providers come from the shared cache
             assert env["TF_PLUGIN_CACHE_DIR"]
             return 0, "", ""
         if "validate" in args:
