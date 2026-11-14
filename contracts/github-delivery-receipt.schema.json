@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/github-delivery-receipt.schema.json",
+  "title": "GitHubDeliveryReceipt",
+  "description": "Proof of delivery. 'Delivery confirmed' may be shown ONLY when read_back_verified is true — meaning the commit was fetched back from GitHub and every written path's hash matched. A frontend toast is never proof of delivery.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "repository", "branch", "written_paths", "commit_sha", "read_back_verified"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "github_delivery_receipt" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "repository": { "type": "string", "description": "owner/name" },
+    "branch": { "type": "string", "description": "Feature branch created for this delivery — never a default branch." },
+    "written_paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/ArtifactRef" }
+    },
+    "commit_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "pr_url": { "type": "string", "format": "uri" },
+    "read_back_verified": { "type": "boolean" },
+    "read_back_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved_by", "approved_at"],
+      "properties": {
+        "approved_by": { "type": "string", "description": "user id of the explicit human approval." },
+        "approved_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+      }
+    }
+  }
+}

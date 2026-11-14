@@ -1,0 +1,8 @@
+IaC Genius Community Edition
+Copyright 2026 SriKrishnas Ventures LLC (d/b/a IACGenius)
+
+This product includes software developed as a community edition of IaC Genius,
+running on the Hermes Agent runtime (Nous Research). The Spot deployment patterns
+are adapted from RemediGenius Community Edition (Apache-2.0).
+
+Licensed under the Apache License, Version 2.0. See LICENSE.

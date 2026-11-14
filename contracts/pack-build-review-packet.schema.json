@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-build-review-packet.schema.json",
+  "title": "PackBuildReviewPacket",
+  "description": "What a named human reads before deciding. status is a Literal PENDING_HUMAN_REVIEW because this record can only ever ASK: there is no APPROVED value it could be set to, so no code path exists that promotes by writing a field. Promotion is a separate, reviewed commit against the pack registry.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "packet_id", "request_id", "candidate_pack_id", "candidate_content_hash", "generated_files", "evaluation", "model_role", "limitations", "status", "created_at"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "packet_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": "string", "minLength": 1 },
+    "candidate_pack_id": { "type": "string", "minLength": 1 },
+    "candidate_content_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "The EXACT bytes under review. A human approves this hash, not a name - editing the candidate afterwards invalidates the approval rather than inheriting it."
+    },
+    "generated_files": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Every file the templates wrote, with its hash. Nothing else was written; the quarantine root is enforced by the renderer, not by this list.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "knowledge_refs": {
+      "type": "array",
+      "items": { "$ref": "https://contracts.iacgenius.com/v1/knowledge-source-ref.schema.json" }
+    },
+    "knowledge_bundle_hash": { "type": ["string", "null"] },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status", "evaluator_version"],
+      "description": "The deterministic evaluator's raw record. A PASSED evaluation means the stated fixture and interface tests passed - not that a real model behaves well, not cloud support, not security compliance.",
+      "properties": {
+        "status": { "type": "string", "enum": ["PASSED", "FAILED"] },
+        "evaluator_version": { "type": "string" },
+        "failed_cases": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "skill_evaluations": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "model_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "model_identity", "live"],
+      "description": "Identity and metering only. No prompt, no artifact, no requirement text, no secret ever appears here.",
+      "properties": {
+        "role": { "type": "string", "enum": ["intent_resolution", "pack_planning", "pack_builder", "utility_execution"] },
+        "model_identity": { "type": "string", "minLength": 1 },
+        "live": { "type": "boolean" },
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "latency_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "capability_requests": { "type": "array", "items": { "type": "string" } },
+    "human_decision_questions": { "type": "array", "items": { "type": "string" } },
+    "limitations": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "requested_capability_reviews": {
+      "type": "array",
+      "description": "Surfaced to the reviewer as REQUESTS, never grants. Each renders as 'requires separate human review'; resolving one is a PromotionDecision field, not something this packet can do.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "reason", "review_status"],
+        "properties": {
+          "capability": {
+            "type": "string",
+            "enum": [
+              "network_read", "mcp_integration", "binary_dependency", "credentials",
+              "package_install", "external_api", "filesystem_beyond_workspace"
+            ]
+          },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "review_status": { "const": "requires_human_review" },
+          "proposed_scope": { "type": "string", "maxLength": 500 },
+          "risk_notes": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "status": {
+      "const": "PENDING_HUMAN_REVIEW",
+      "description": "The only value. There is no APPROVED to write, so nothing here can promote."
+    },
+    "created_at": { "type": "string" }
+  }
+}

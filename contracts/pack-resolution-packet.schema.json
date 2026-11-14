@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-resolution-packet.schema.json",
+  "title": "PackResolutionPacket",
+  "description": "What the DETERMINISTIC resolver decided, and why, for one mission. Every selection is a promoted pack named by its exact version hash; every non-selection carries a machine-readable reason code. Ranking is by declared priority and version hash only - never by a model's opinion that a pack sounds relevant, which is the failure mode this packet exists to make impossible to hide. The packet records a DECISION about which packs may run; it is not evidence about artifacts and can never change a check status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "packet_id", "mission_id", "organization_id", "requested", "outcome", "created_at"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "packet_id": { "type": "string", "minLength": 1 },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "requested": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "iac_tool", "mission_kind"],
+      "description": "The lane the mission asked for. Supplied by the facade from a TaskPacket, never by a browser choosing a pack.",
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "iac_tool": { "type": "string", "minLength": 1 },
+        "mission_kind": { "type": "string", "minLength": 1 },
+        "delivery_lane": { "type": ["string", "null"] },
+        "target_profile_id": { "type": ["string", "null"] }
+      }
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["RESOLVED", "NEEDS_HUMAN_CHOICE", "NO_COMPATIBLE_PACK", "BLOCKED"],
+      "description": "RESOLVED means the WHOLE plan resolved: every eligible pack is placed and unmet_contracts is empty - a partial plan is never RESOLVED. BLOCKED means part of a plan exists but a needed contract has no producer; a PackNeed is raised naming it, and the composition is display, not permission to run. NEEDS_HUMAN_CHOICE and NO_COMPATIBLE_PACK are deliberately distinct. Ambiguity means a person picks between named candidates; no compatible pack means there is nothing to pick from and a PackNeed is raised. Collapsing them would let 'we could not decide' read as 'we cannot do this'."
+    },
+    "composition": {
+      "type": "array",
+      "description": "The ordered plan, derived from typed handoffs: each step's produced contract is the next step's accepted contract. Built by graph construction, not by a model choosing an order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step_index", "pack_id", "version_hash", "accepts", "produces"],
+        "properties": {
+          "step_index": { "type": "integer", "minimum": 0 },
+          "pack_id": { "type": "string", "minLength": 1 },
+          "version_hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "accepts": { "type": "array", "items": { "type": "string" } },
+          "produces": { "type": "array", "items": { "type": "string" } },
+          "priority": { "type": "integer" }
+        }
+      }
+    },
+    "selected": {
+      "type": "array",
+      "description": "Promoted pack versions eligible for this lane. A pack appears here only after promotion, evaluation, integrity, skill, capability, inspector AND lane-compatibility checks all passed.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pack_id", "version_hash"],
+        "properties": {
+          "pack_id": { "type": "string", "minLength": 1 },
+          "version_hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "version": { "type": "string" },
+          "kind": { "type": "string" },
+          "priority": { "type": "integer" },
+          "accepts": { "type": "array", "items": { "type": "string" } },
+          "produces": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "rejected": {
+      "type": "array",
+      "description": "Every pack version that was considered and not selected, with the reason. Present so a member can be told why a capability they expected is absent, rather than seeing an empty plan.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pack_id", "reason_code"],
+        "properties": {
+          "pack_id": { "type": "string", "minLength": 1 },
+          "version_hash": { "type": ["string", "null"] },
+          "reason_code": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "maxLength": 600 }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "Ambiguity a deterministic rule cannot settle. Two packs producing the same contract is the canonical case: guessing which wins is how a composition starts depending on dictionary ordering.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["conflict", "packs"],
+        "properties": {
+          "conflict": { "type": "string", "minLength": 1 },
+          "contract": { "type": ["string", "null"] },
+          "packs": { "type": "array", "items": { "type": "string" } },
+          "detail": { "type": "string", "maxLength": 600 }
+        }
+      }
+    },
+    "unmet_contracts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Contracts the composition needs and nothing promoted produces. This is what a PackNeed is built from."
+    },
+    "pack_need_id": {
+      "type": ["string", "null"],
+      "description": "Set when the resolver raised a PackNeed. Null otherwise; the resolver never builds an agent, calls a model or improvises a step in its place."
+    },
+    "needs_human_decision": { "type": "boolean" },
+    "resolver_version": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string" }
+  }
+}

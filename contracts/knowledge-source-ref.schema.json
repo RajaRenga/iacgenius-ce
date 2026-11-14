@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/knowledge-source-ref.schema.json",
+  "title": "KnowledgeSourceRef",
+  "description": "One provenance-bound knowledge source. Advisory context, never validation truth: a source is something someone wrote down, an inspector result is something a tool measured. The trust disposition is the intake rubric's verdict and is recorded here so a candidate cannot cite a source nobody vetted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_id", "version", "content_hash", "provenance", "trust_disposition"],
+  "properties": {
+    "source_id": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Recomputed on every load. Edited content stops matching, which invalidates any bundle that cited it."
+    },
+    "domain": { "type": ["string", "null"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["origin"],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "enum": ["authored-locally", "reviewed-public-documentation", "internal-standard"],
+          "description": "External collections are DISCOVERY sources, not approved libraries. Anything not on this list has not passed intake and may not be cited by a candidate."
+        },
+        "authored_by": { "type": "string" },
+        "authored_at": { "type": "string" },
+        "source_reference": { "type": "string" },
+        "license": { "type": "string" }
+      }
+    },
+    "trust_disposition": {
+      "type": "string",
+      "enum": ["metadata_only", "text_review", "review_required", "rejected"],
+      "description": "The intake rubric verdict. Only text_review and stricter may influence a candidate; rejected sources are retained with their reason and never copied."
+    }
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-build-proposal.schema.json",
+  "title": "PackBuildProposal",
+  "description": "UNTRUSTED structured output from the pack_builder model role. This is the security boundary of the whole factory: a proposal describes a Pack in KNOWN FIELDS and cannot name a file path, so traversal and arbitrary writes are not checks that might be forgotten - they are shapes this contract cannot express. Controlled templates turn these fields into an allowlisted set of filenames under packs/candidates/<pack_id>/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pack_id", "version", "kind", "domain", "purpose", "accepts", "produces", "workspace", "tools", "evidence", "feedback", "runtime", "boundaries", "fixtures", "evaluation_plan", "limitations"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}[a-z0-9]$",
+      "description": "Lowercase, hyphenated, no dots and no slashes. The pattern is the quarantine boundary: a pack_id that cannot contain a separator cannot escape its directory."
+    },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "kind": { "type": "string", "enum": ["design", "author", "repair", "assessment", "delivery"] },
+    "domain": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "prose": {
+      "type": "string",
+      "maxLength": 20000,
+      "description": "PACK.md body. Rendered as text through a template; never executed, never interpreted as configuration."
+    },
+    "accepts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/contractRef" } },
+    "produces": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/contractRef" } },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_write_roots", "output_manifest_required", "max_files", "max_bytes"],
+      "properties": {
+        "allowed_write_roots": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*$" },
+          "description": "Single path segments only. No slashes, no dots, so '..' and absolute paths are unrepresentable."
+        },
+        "output_manifest_required": { "const": true },
+        "max_files": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "max_bytes": { "type": "integer", "minimum": 1, "maximum": 5000000 }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested"],
+      "properties": {
+        "requested": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["logical_purpose", "status"],
+            "properties": {
+              "logical_purpose": { "type": "string", "minLength": 1 },
+              "status": {
+                "type": "string",
+                "enum": ["candidate", "approved"],
+                "description": "A candidate Skill never becomes selectable merely because a Pack mentions it."
+              },
+              "skill_name": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "denied", "capabilities_required"],
+      "properties": {
+        "allowed": { "type": "array", "items": { "type": "string" } },
+        "denied": { "type": "array", "items": { "type": "string" } },
+        "capabilities_required": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "optional", "inspector_bindings", "binding_states"],
+      "properties": {
+        "required": { "type": "array", "items": { "type": "string" } },
+        "optional": { "type": "array", "items": { "type": "string" } },
+        "inspector_bindings": { "type": "string", "enum": ["target_profile", "none"] },
+        "binding_states": {
+          "type": "object",
+          "description": "requirement -> {state, reason}. A claimed `real` state with no actual binding is the exact lie the three-state vocabulary exists to prevent, and is refused by the builder.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["state"],
+            "properties": {
+              "state": { "type": "string", "enum": ["real", "simulated", "not_available"] },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defect", "missing_decision", "out_of_scope", "unsatisfiable", "unclassified"],
+      "properties": {
+        "defect": { "$ref": "#/$defs/owner" },
+        "missing_decision": { "$ref": "#/$defs/owner" },
+        "out_of_scope": { "$ref": "#/$defs/owner" },
+        "unsatisfiable": { "$ref": "#/$defs/owner" },
+        "unclassified": { "$ref": "#/$defs/owner" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lane", "network", "credentials", "timeout_seconds"],
+      "properties": {
+        "lane": { "type": "string", "minLength": 1 },
+        "network": { "const": "none" },
+        "credentials": { "const": "none" },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 3600 }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["never"],
+      "properties": {
+        "never": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    },
+    "requested_capability_reviews": {
+      "type": "array",
+      "description": "REQUESTED authority, which is not GRANTED authority. A future research, web or MCP Pack can say 'this capability would need review' without the proposal granting itself anything: runtime.network and runtime.credentials remain Literal 'none' regardless of what appears here. Nothing in this array can trigger a tool call, alter a capability lease, or reach the runtime. It exists so a legitimate future need is expressible as a QUESTION rather than forcing a redesign of the safe default - and every entry renders as 'requires separate human review'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "reason", "review_status"],
+        "properties": {
+          "capability": {
+            "type": "string",
+            "enum": [
+              "network_read", "mcp_integration", "binary_dependency", "credentials",
+              "package_install", "external_api", "filesystem_beyond_workspace"
+            ],
+            "description": "A closed set. An unenumerated capability cannot be requested at all, so this field cannot become a free-text channel for inventing authority."
+          },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "review_status": {
+            "const": "requires_human_review",
+            "description": "The only value. There is no granted state, so no code path can turn a request into a grant by writing a field."
+          },
+          "proposed_scope": { "type": "string", "maxLength": 500 },
+          "risk_notes": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "description": "A pack nobody wrote a fixture for is unevaluatable, and absence is not a pass.",
+      "additionalProperties": true
+    },
+    "evaluation_plan": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "limitations": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "human_decision_questions": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "contractRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "version"],
+      "properties": {
+        "contract": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      }
+    },
+    "owner": { "type": "string", "enum": ["this_pack", "upstream_pack", "human", "policy_owner"] }
+  }
+}

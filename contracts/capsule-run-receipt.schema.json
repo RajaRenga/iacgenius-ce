@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/capsule-run-receipt.schema.json",
+  "title": "CapsuleRunReceipt",
+  "description": "What actually happened when a capsule ran. Persisted before the output envelope is built, so a resume after a crash finds the receipt and does not repeat the work. Separates RUNTIME outcome from VALIDATION outcome on purpose: a timed-out inspector is a runtime failure, not a failing check, and collapsing the two is how a broken runner starts reading as a broken artifact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "invocation_id",
+    "pack",
+    "mission_id",
+    "organization_id",
+    "attempt",
+    "status",
+    "started_at",
+    "finished_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "receipt_id": { "type": "string", "minLength": 1 },
+    "invocation_id": { "type": "string", "minLength": 1 },
+    "pack": { "$ref": "agent-pack-reference.schema.json" },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["COMPLETED", "REFUSED", "FAILED", "TIMED_OUT"],
+      "description": "Runtime outcome only."
+    },
+    "refusal_code": {
+      "type": ["string", "null"],
+      "description": "Machine-readable reason when status is REFUSED. 'invalid' is not a reason a person can act on, so every refusal path has its own code."
+    },
+    "output_envelope_id": { "type": ["string", "null"] },
+    "work_product": { "$ref": "work-product-manifest.schema.json" },
+    "tokens_spent": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Output tokens attributable to this invocation. Zero for deterministic adapters, and recorded rather than assumed."
+    },
+    "started_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "finished_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "adapter": {
+      "type": "string",
+      "description": "Which adapter served the invocation, e.g. 'scripted' or 'structured-worker'."
+    }
+  }
+}

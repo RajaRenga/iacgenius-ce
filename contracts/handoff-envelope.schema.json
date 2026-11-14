@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/handoff-envelope.schema.json",
+  "title": "HandoffEnvelope",
+  "description": "The typed thing that flows between Agent Packs. A downstream pack receives THIS and the evidence it references - never the upstream pack's workspace, conversation or internal state. Deliberately provider-neutral: no field here names a cloud, an IaC tool or a scanner, because the whole point of the kernel is that adding one is a pack, not a schema change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope_id",
+    "producer",
+    "mission_id",
+    "thread_id",
+    "organization_id",
+    "attempt",
+    "lineage",
+    "input_refs",
+    "status",
+    "assumptions",
+    "unknowns",
+    "artifact_manifest",
+    "evidence_refs",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "envelope_id": { "type": "string", "minLength": 1 },
+    "producer": {
+      "$ref": "agent-pack-reference.schema.json",
+      "description": "Which pack version produced this. Pinned to a content hash: a downstream pack that trusts a producer trusts an exact version of it, never a name."
+    },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "thread_id": { "type": "string", "minLength": 1 },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenant. Checked on receipt, not assumed from context - a handoff carrying another tenant's id is refused, which is the same boundary delivery targets and policy acceptances enforce."
+    },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "lineage": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ordered envelope_ids this one descends from. Makes a composition auditable without replaying it."
+    },
+    "input_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "envelope_ids this pack consumed."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["COMPLETED", "INSUFFICIENT_INPUT", "REFUSED", "FAILED"],
+      "description": "Generic capsule outcome. Never a validation verdict - a pack does not get to say whether evidence passed."
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "What the pack had to assume because nobody supplied it. Surfaced, never silently applied."
+    },
+    "unknowns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "What the pack could not determine. An empty list on a design pack is itself suspicious and its own inspector can reject it."
+    },
+    "artifact_manifest": { "$ref": "work-product-manifest.schema.json" },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Identifiers of CapsuleEvidenceBundles covering this envelope's artifacts. References, not verdicts: the bundle holds the statuses and the kernel reads them."
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "payload": {
+      "type": "object",
+      "description": "Pack-declared typed body, validated against the pack's declared produced contract. The kernel does not interpret it.",
+      "additionalProperties": true
+    }
+  }
+}

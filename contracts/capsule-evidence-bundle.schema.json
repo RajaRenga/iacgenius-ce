@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/capsule-evidence-bundle.schema.json",
+  "title": "CapsuleEvidenceBundle",
+  "description": "The evidence collected against a set of InspectorRequirements for one envelope. Statuses reuse the project-wide CheckStatus, so missing evidence renders as NOT_RUN or UNKNOWN and never collapses into PASS. A pack never writes this: the kernel requests inspectors and records what they answered, which is why a pack cannot turn its own FAIL into a PASS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_id", "envelope_id", "evidence_digest", "results", "satisfied", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "envelope_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The envelope this evidence is about. Evidence for a different envelope is wrong-artifact evidence and is refused."
+    },
+    "evidence_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "sha256 over the artifact identities and hashes this evidence was produced against. If the artifacts change, the digest stops matching and the evidence is stale - the same staleness mechanism policy acceptances use."
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement_id", "status"],
+        "properties": {
+          "requirement_id": { "type": "string", "minLength": 1 },
+          "status": { "$ref": "common.schema.json#/$defs/CheckStatus" },
+          "detail": { "type": "string" },
+          "inspector": {
+            "type": "string",
+            "description": "What actually answered, recorded for audit. This is the ONE place a concrete tool name legitimately appears, because it is a fact about the past rather than a decision about the future."
+          },
+          "finding_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "satisfied": {
+      "type": "boolean",
+      "description": "Every BLOCKING requirement answered PASS. Computed by the kernel from results; a pack cannot assert it."
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  }
+}

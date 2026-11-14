@@ -1,0 +1,79 @@
+{
+  "asserts": {
+    "file_layout": "multi-file",
+    "version_facts_home": "compiled facts.json, never this file"
+  },
+  "authority_claims": [],
+  "exclusive_role": "authoring_craft",
+  "inputs": {
+    "allowed": [
+      "capability_bundle",
+      "terraform_hcl_text",
+      "static_diagnostics",
+      "tool_and_provider_versions",
+      "settled_decision_ledger",
+      "stated_user_intent"
+    ]
+  },
+  "name": "iac-authoring",
+  "never_do": [
+    "run Terraform, OpenTofu, or any other tool",
+    "access Terraform state, cloud APIs, or cloud credentials",
+    "produce apply, import, state, or destroy commands",
+    "quote a version number \u2014 the pinned versions are in the manifest and the deltas are in facts.json",
+    "contradict a settled decision from the compiled ledger",
+    "claim the code is verified \u2014 only validators verify"
+  ],
+  "outputs": {
+    "kind": "advisory_patch_proposal",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-09-04",
+    "authored_by": "the feat/capability-supply-chain session",
+    "origin": "harvested-locally",
+    "source_reference": "infra/hermes-engine/skills/codegen-common/SKILL.md in the iacgenius-vercel repository, which docs/hermes-engine/SKILLS-AUDIT.md \u00a71 traces to skills/codegen/_shared-architecture.md and TerraformSyntax.getAgentModePrompt. Harvested through the evidence-card adapters (ADR-016); every version pin the source carried was refused by the scrub and moved to facts/."
+  },
+  "purpose": "HCL craft for every mission: deployability, connectivity completeness, the syntax rules that make validate fail, and file layout. Cloud and dialect specifics belong to other axes.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts",
+    "write:mission_sandbox"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 8000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "medium",
+  "schema_version": "1.0.0",
+  "trigger": {
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "terraform",
+      "opentofu"
+    ],
+    "provider": [
+      "aws",
+      "azure",
+      "gcp"
+    ],
+    "task_kind": [
+      "generate",
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

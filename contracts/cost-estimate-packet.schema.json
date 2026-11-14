@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/cost-estimate-packet.schema.json",
+  "title": "CostEstimatePacket",
+  "description": "Deterministic cost estimate built from a DATED price source. If required inputs are missing the status is INSUFFICIENT_INPUT — prices are never fetched ad hoc and currency is never invented.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance", "status"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "cost_estimate" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "status": { "type": "string", "enum": ["ESTIMATED", "INSUFFICIENT_INPUT"] },
+    "missing_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Required when status is INSUFFICIENT_INPUT."
+    },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "price_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "dated"],
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "dated": { "type": "string", "format": "date" }
+      }
+    },
+    "region": { "type": "string" },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resource", "monthly_estimate"],
+        "properties": {
+          "resource": { "type": "string" },
+          "unit": { "type": "string" },
+          "unit_price": { "type": "number", "minimum": 0 },
+          "quantity_assumption": { "type": "string" },
+          "monthly_estimate": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "total_monthly_estimate": { "type": "number", "minimum": 0 },
+    "assumptions": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "ESTIMATED" } } },
+      "then": { "required": ["currency", "price_source", "line_items", "total_monthly_estimate"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "INSUFFICIENT_INPUT" } } },
+      "then": { "required": ["missing_inputs"] }
+    }
+  ]
+}

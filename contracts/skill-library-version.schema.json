@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SkillLibraryVersion",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version_hash",
+    "lifecycle_state",
+    "manifest",
+    "markdown",
+    "integrity_ok",
+    "evaluation_status"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "version_hash": {
+      "type": "string"
+    },
+    "lifecycle_state": {
+      "type": "string"
+    },
+    "manifest": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "markdown": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "integrity_ok": {
+      "type": "boolean"
+    },
+    "evaluation_status": {
+      "type": "string"
+    }
+  }
+}

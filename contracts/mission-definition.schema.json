@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/mission-definition.schema.json",
+  "title": "MissionDefinition",
+  "description": "A composition, declared as data. The ordered steps ARE the graph: LangGraph iterates them, and adding a provider means adding a definition and a pack rather than a branch. This is the contract that makes 'if target == aws-terraform ... elif target == azure-terraform' unnecessary, and a test greps the kernel to keep it that way.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "definition_id", "version", "steps", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "definition_id": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "description": { "type": "string" },
+    "target_profile_id": {
+      "type": ["string", "null"],
+      "description": "Binding of generic inspector names and skill sets to concrete tooling, applied to every step that asks for one."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step_id", "pack_id", "accepts", "produces"],
+        "properties": {
+          "step_id": { "type": "string", "minLength": 1 },
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Resolved against the pack registry at composition time. A step naming a candidate pack fails to compose - it does not silently run unapproved code."
+          },
+          "accepts": { "type": "string", "minLength": 1 },
+          "produces": { "type": "string", "minLength": 1 },
+          "evidence_required": {
+            "type": "array",
+            "items": { "$ref": "inspector-requirement.schema.json" },
+            "description": "Generic requirement names only. What satisfies them is the target profile's business."
+          },
+          "max_attempts": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  }
+}

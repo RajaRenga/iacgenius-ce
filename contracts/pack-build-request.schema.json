@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-build-request.schema.json",
+  "title": "PackBuildRequest",
+  "description": "A durable record that a capability is MISSING. Creating one calls no model and writes no candidate file - it is a question, not a build. An authorized human starts the build; a mission never does, because an agent that can conjure its own tools inside a customer run has escaped every review the system has.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "organization_id", "requested_by", "capability_outline", "domain", "state", "created_at"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "requested_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The named person inside the tenant who asked. Tenant scope answers 'which company'; this answers 'who', which is what an audit row needs."
+    },
+    "mission_id": {
+      "type": ["string", "null"],
+      "description": "The mission that discovered the gap, when there was one. Recorded for audit; it grants nothing."
+    },
+    "capability_outline": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Plain language, operator-supplied. Bounded because an unbounded field is a prompt-injection surface and a place customer text could accumulate."
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Metadata only. Domain selects knowledge and fixtures; it must never cause a branch in the kernel."
+    },
+    "target_profile_id": { "type": ["string", "null"] },
+    "state": {
+      "type": "string",
+      "enum": ["AWAITING_OPERATOR_START", "AWAITING_BUILDER", "PROPOSAL_REJECTED", "CANDIDATE_BUILT", "PENDING_HUMAN_REVIEW", "ARCHIVED"],
+      "description": "Named for who the request is waiting on, which is the only thing a queue reader needs. AWAITING_OPERATOR_START and AWAITING_BUILDER replaced REQUESTED and BUILD_STARTED: the old names described an intention, and BUILD_STARTED in particular lied by default - while no Builder exists, a request in that state has had nothing built. AWAITING_BUILDER says the true thing (an operator authorised it; it is queued) and keeps saying the true thing after the Builder lands. No PROMOTED state exists here, deliberately: promotion is a separate decision recorded in the pack registry by a human, never a transition this record can make."
+    },
+    "reason_no_pack_matched": { "type": ["string", "null"] },
+    "knowledge_refs": {
+      "type": "array",
+      "items": { "$ref": "https://contracts.iacgenius.com/v1/knowledge-source-ref.schema.json" }
+    },
+    "requested_inspectors": { "type": "array", "items": { "type": "string" } },
+    "expected_accepts": {
+      "type": "array",
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+      "description": "Contract NAMES, not prose. An intent field that accepted free text would be where a prompt eventually lives; an identifier-shaped field cannot carry one."
+    },
+    "expected_produces": {
+      "type": "array",
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+    },
+    "handoff_intent": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "What the handoff is FOR, in bounded plain language."
+    },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "non_goals": { "type": "array", "items": { "type": "string" } },
+    "prohibited_actions": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "type": "string" },
+      "description": "What this Pack must never do, recorded at REQUEST time - before any model has an opinion - so the boundary is the requester's rather than the builder's."
+    },
+    "requested_capability_reviews": {
+      "type": "array",
+      "description": "Questions, not grants. Carried from request to proposal to reviewer unchanged; nothing here can trigger a tool call, alter a capability lease, or reach the runtime.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "reason"],
+        "properties": {
+          "capability": {
+            "type": "string",
+            "enum": ["network_read", "mcp_integration", "binary_dependency", "credentials", "package_install", "external_api", "filesystem_beyond_workspace"]
+          },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "review_status": { "type": "string", "enum": ["requires_human_review"] },
+          "proposed_scope": { "type": "string", "maxLength": 500 },
+          "risk_notes": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "started_by": {
+      "type": ["string", "null"],
+      "description": "Null until a human starts the build. Its absence is what makes auto-start impossible to represent."
+    },
+    "started_at": { "type": ["string", "null"] },
+    "model_role": {
+      "type": ["string", "null"],
+      "enum": ["intent_resolution", "pack_planning", "pack_builder", "utility_execution", null],
+      "description": "A ROLE, never a model name, endpoint or deployment."
+    },
+    "model_identity": {
+      "type": ["string", "null"],
+      "description": "The configured identity actually used, recorded for audit after the fact. Never supplied by a Pack."
+    },
+    "knowledge_bundle_hash": { "type": ["string", "null"] },
+    "candidate_pack_id": { "type": ["string", "null"] },
+    "candidate_content_hash": { "type": ["string", "null"] },
+    "refusal_code": { "type": ["string", "null"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": ["string", "null"] }
+  }
+}

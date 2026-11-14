@@ -1,0 +1,78 @@
+{
+  "asserts": {
+    "baseline": "Terraform; OpenTofu is expressed as the delta from it",
+    "portability": "the stack must also parse on the Terraform baseline"
+  },
+  "authority_claims": [],
+  "exclusive_role": "dialect",
+  "inputs": {
+    "allowed": [
+      "capability_bundle",
+      "terraform_hcl_text",
+      "static_diagnostics",
+      "tool_and_provider_versions",
+      "settled_decision_ledger",
+      "stated_user_intent"
+    ]
+  },
+  "name": "dialect-opentofu",
+  "never_do": [
+    "run Terraform, OpenTofu, or any other tool",
+    "access Terraform state, cloud APIs, or cloud credentials",
+    "produce apply, import, state, or destroy commands",
+    "quote a provider version or an argument delta - those are in facts.json for the pins this job uses",
+    "state an account id, a real environment name or a CIDR that was not supplied as an input",
+    "add infrastructure to close a policy finding"
+  ],
+  "outputs": {
+    "kind": "advisory_patch_proposal",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-09-04",
+    "authored_by": "the feat/capability-supply-chain session",
+    "origin": "harvested-locally",
+    "source_reference": "infra/hermes-engine/skills/codegen-opentofu-{aws,azure,gcp}/SKILL.md, which are byte-similar and differ only in the provider address each names. docs/hermes-engine/SKILLS-AUDIT.md \u00a71 in the iacgenius-vercel repository traces every line of that file to the TypeScript prompt it was ported from. Harvested through the evidence-card adapters (ADR-016); every version pin and delta table the source carried was refused by the scrub and moved to facts/."
+  },
+  "purpose": "The OpenTofu delta from the Terraform baseline: portability, CLI naming, provider source addresses. Five things, and no cloud knowledge at all.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts",
+    "write:mission_sandbox"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 8000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "medium",
+  "schema_version": "1.0.0",
+  "trigger": {
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "opentofu"
+    ],
+    "provider": [
+      "aws",
+      "azure",
+      "gcp"
+    ],
+    "task_kind": [
+      "generate",
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

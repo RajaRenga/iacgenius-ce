@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iacgenius.com/schemas/v1/application-infrastructure-spec.schema.json",
+  "title": "ApplicationInfrastructureSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scope", "application_source_generation", "deployment_contract", "sections", "open_questions"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "scope": { "const": "application_infrastructure" },
+    "application_source_generation": { "const": false },
+    "deployment_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_source", "artifact_kind", "runtime", "listen_port", "health_check_path", "network_exposure", "dependencies", "secret_names", "scaling"],
+      "properties": {
+        "application_source": { "const": "customer_supplied" },
+        "artifact_kind": { "enum": ["container_image", "source_repository", "build_artifact", "static_assets", "none", "unknown"] },
+        "runtime": { "type": ["string", "null"], "maxLength": 80 },
+        "listen_port": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
+        "health_check_path": { "type": ["string", "null"], "maxLength": 240 },
+        "network_exposure": { "enum": ["public", "private", "restricted", "none", "unknown"] },
+        "dependencies": {
+          "type": "array", "maxItems": 16,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["kind", "name", "engine"],
+            "properties": {
+              "kind": { "enum": ["database", "cache", "queue", "object_storage", "search", "other"] },
+              "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "engine": { "type": ["string", "null"], "maxLength": 80 }
+            }
+          }
+        },
+        "secret_names": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
+        "scaling": {
+          "type": "object", "additionalProperties": false,
+          "required": ["minimum_instances", "maximum_instances"],
+          "properties": {
+            "minimum_instances": { "type": ["integer", "null"], "minimum": 0, "maximum": 10000 },
+            "maximum_instances": { "type": ["integer", "null"], "minimum": 1, "maximum": 10000 }
+          }
+        }
+      }
+    },
+    "sections": {
+      "type": "array", "maxItems": 12,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "title", "intent", "success_checks", "failure_conditions"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,40}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "intent": { "type": "string", "minLength": 1, "maxLength": 600 },
+          "success_checks": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+          "failure_conditions": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 300 } }
+        }
+      }
+    },
+    "open_questions": { "type": "array", "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 240 } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "deployment_contract": { "properties": { "artifact_kind": { "const": "unknown" } } } } },
+      "then": { "properties": { "open_questions": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "deployment_contract": { "properties": { "network_exposure": { "const": "unknown" } } } } },
+      "then": { "properties": { "open_questions": { "minItems": 1 } } }
+    }
+  ]
+}

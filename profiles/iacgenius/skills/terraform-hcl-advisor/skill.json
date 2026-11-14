@@ -1,0 +1,76 @@
+{
+  "asserts": {
+    "aws_provider_pin": "~> 6.58.0",
+    "file_layout": "multi-file"
+  },
+  "authority_claims": [],
+  "exclusive_role": "authoring",
+  "inputs": {
+    "allowed": [
+      "terraform_hcl_text",
+      "static_diagnostics",
+      "tool_and_provider_versions",
+      "stated_user_intent"
+    ]
+  },
+  "name": "terraform-hcl-advisor",
+  "never_do": [
+    "run Terraform, OpenTofu, or any other tool",
+    "access Terraform state, cloud APIs, or cloud keys",
+    "produce apply, import, state, or destroy commands",
+    "claim the patch is verified \u2014 only validators verify"
+  ],
+  "outputs": {
+    "kind": "advisory_text",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-08-12",
+    "authored_by": "Rajagopal Rengarajan (owner) with the build session",
+    "origin": "authored-locally",
+    "source_reference": "first vertical slice, promoted 2026-08-12 as terraform-hcl-advisor@819b93231ac6198b (prose unchanged; this version adds the machine-readable manifest)"
+  },
+  "purpose": "Advise on HCL/OpenTofu code quality and correctness from static inputs only, and propose text-only patches.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts",
+    "write:mission_sandbox"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 8000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "medium",
+  "rollback": {
+    "replaced_by": null,
+    "replaces": "terraform-hcl-advisor@819b93231ac6198b"
+  },
+  "schema_version": "1.0.0",
+  "trigger": {
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "terraform"
+    ],
+    "provider": [
+      "aws"
+    ],
+    "task_kind": [
+      "generate",
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

@@ -1,0 +1,15 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+local.tfvars
+*.tfvars.json
+dist/
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

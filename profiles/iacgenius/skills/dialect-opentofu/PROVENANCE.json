@@ -1,0 +1,31 @@
+{
+  "cards": [],
+  "generated_at": "2026-09-04T17:40:47.755836+00:00",
+  "generator": "scripts/seal_skill.py",
+  "inputs": {
+    "authored_at": "2026-09-04",
+    "authored_by": "the feat/capability-supply-chain session",
+    "exclusive_role": "dialect",
+    "origin": "harvested-locally"
+  },
+  "model": {
+    "profile": null,
+    "role": null,
+    "transport": null,
+    "used": false
+  },
+  "notes": "Sealed, NOT promoted. A human adds the registry entry below in a reviewed commit; until then no mission can load this version.",
+  "object": {
+    "content_hash": "e0fdb9c4d102b0ac",
+    "kind": "procedure",
+    "name": "dialect-opentofu"
+  },
+  "review": {
+    "reviewed_at": null,
+    "reviewed_by": null
+  },
+  "schema_version": "1.0.0",
+  "sources": [
+    "infra/hermes-engine/skills/codegen-opentofu-{aws,azure,gcp}/SKILL.md, which are byte-similar and differ only in the provider address each names. docs/hermes-engine/SKILLS-AUDIT.md \u00a71 in the iacgenius-vercel repository traces every line of that file to the TypeScript prompt it was ported from. Harvested through the evidence-card adapters (ADR-016); every version pin and delta table the source carried was refused by the scrub and moved to facts/."
+  ]
+}

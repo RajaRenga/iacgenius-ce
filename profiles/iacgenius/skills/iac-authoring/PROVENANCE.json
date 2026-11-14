@@ -1,0 +1,31 @@
+{
+  "cards": [],
+  "generated_at": "2026-09-04T17:40:38.174037+00:00",
+  "generator": "scripts/seal_skill.py",
+  "inputs": {
+    "authored_at": "2026-09-04",
+    "authored_by": "the feat/capability-supply-chain session",
+    "exclusive_role": "authoring_craft",
+    "origin": "harvested-locally"
+  },
+  "model": {
+    "profile": null,
+    "role": null,
+    "transport": null,
+    "used": false
+  },
+  "notes": "Sealed, NOT promoted. A human adds the registry entry below in a reviewed commit; until then no mission can load this version.",
+  "object": {
+    "content_hash": "e59cafd9a4d8eb9f",
+    "kind": "procedure",
+    "name": "iac-authoring"
+  },
+  "review": {
+    "reviewed_at": null,
+    "reviewed_by": null
+  },
+  "schema_version": "1.0.0",
+  "sources": [
+    "infra/hermes-engine/skills/codegen-common/SKILL.md in the iacgenius-vercel repository, which docs/hermes-engine/SKILLS-AUDIT.md \u00a71 traces to skills/codegen/_shared-architecture.md and TerraformSyntax.getAgentModePrompt. Harvested through the evidence-card adapters (ADR-016); every version pin the source carried was refused by the scrub and moved to facts/."
+  ]
+}

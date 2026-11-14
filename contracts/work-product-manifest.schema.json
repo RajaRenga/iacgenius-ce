@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/work-product-manifest.schema.json",
+  "title": "WorkProductManifest",
+  "description": "Every file a pack CLAIMS to have written, with hashes. The kernel compares the claim against the workspace: a file on disk that is not declared here is an undeclared write and fails the run, and a declared file whose hash does not match is a tampered or stale claim. Requiring the manifest rather than scanning the directory is deliberate - it makes the pack state its output, so 'what did you produce' has an answer that can be wrong.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "produced_by", "artifacts", "total_bytes", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "produced_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "pack_id@version_hash that claims these artifacts."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/ArtifactRef" },
+      "description": "Paths are relative to the capsule workspace root. An absolute path or any traversal segment is rejected before the hash is even checked."
+    },
+    "total_bytes": { "type": "integer", "minimum": 0 },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "truncated": {
+      "type": "boolean",
+      "description": "True when the pack stopped listing because it hit its declared max_files. Named rather than silently short, because a quietly truncated manifest reads as a complete one."
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/agent-pack-reference.schema.json",
+  "title": "AgentPackReference",
+  "description": "Which Agent Pack version is in play, pinned to an immutable content hash. Trust attaches to a version, never to a name - the same rule the skill registry enforces. lifecycle_state is a Literal PROMOTED because a reference to anything else has no business existing in product traffic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pack_id", "version", "version_hash", "kind", "lifecycle_state"],
+  "properties": {
+    "pack_id": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "version_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "sha256 of manifest + prose, truncated to 16 hex chars, recomputed on every load. A mismatch is refused, never warned about."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["design", "author", "repair", "assessment", "delivery"],
+      "description": "What role this pack plays in a composition. Deliberately not a provider or a tool."
+    },
+    "lifecycle_state": {
+      "const": "PROMOTED",
+      "description": "The only state product traffic may load. Candidates and evaluated-but-unapproved versions cannot be referenced here at all."
+    }
+  }
+}

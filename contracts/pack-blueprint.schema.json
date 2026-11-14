@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-blueprint.schema.json",
+  "title": "PackBlueprint",
+  "description": "The SMALL, human-readable thing a model is allowed to write (ADR-001). A PackBlueprint is a description of an intended capability, not a Pack: it has no workspace, no tools, no runtime, no evidence bindings, no fixtures, no evaluation plan and no prose body. Those are supplied by the deterministic compiler, which records authorship for every field it fills, and refuses rather than defaulting wherever a default would make a policy, authority, provider, tool or delivery decision. The contract is deliberately kept small; a review fails if its structural surface starts to resemble PackBuildProposal, and check_admin_pack_studio asserts that mechanically rather than leaving it to judgement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "capability_name", "purpose", "domain", "kind", "accepts", "produces", "limits"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v\\d+$",
+      "description": "The SHORT form a human writes and a model can repeat: 'v1'. The compiler performs schema version expansion (v1 -> 1.0.0) and records that field as compiler-authored. A blueprint that could write a full semantic version would be writing a compatibility claim it has no way to hold."
+    },
+    "capability_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}[a-z0-9]$",
+      "description": "Lowercase, hyphenated, no dots and no slashes. The compiler derives pack_id from this without transformation, so a name that cannot contain a separator cannot escape packs/candidates/<id>/ - the same quarantine boundary PackBuildProposal.pack_id carries, moved one step earlier so the refusal happens before compilation rather than after."
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "One sentence a reviewer reads. Bounded: an unbounded field is where a prompt eventually lives."
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Metadata only. Domain selects knowledge and fixtures; it never branches the kernel."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["design", "author", "repair", "assessment", "delivery"],
+      "description": "The one enum the blueprint must carry rather than the compiler infer. 'delivery' is a delivery decision and 'assessment' is an authority decision, so a compiler-side default here would be exactly the class of default ADR-001 forbids. Asking for it costs one small enumerated field; inferring it would cost the rule."
+    },
+    "accepts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+      "description": "Contract NAMES only, never {contract, version} pairs. The compiler resolves each name against the known handoff wrappers and supplies the version; a name it does not know is a refusal, because inventing a contract version is a compatibility claim nobody made. Named rather than free text so this field cannot carry prose."
+    },
+    "produces": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+      "description": "At least one, always. A Pack with neither a named consumer nor a terminal output is orphaned, and the contract refuses to record one rather than leaving the check to a reviewer."
+    },
+    "knowledge_requests": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "description": "Approved knowledge SOURCE IDS, not URLs and not repository folders. The compiler resolves each against the local hash-verified corpus and refuses an unknown one; a blueprint that could name an arbitrary location would be choosing its own context."
+    },
+    "inspector_intent": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "description": "Generic requirement names the candidate wants checked - 'iac-format', not 'terraform fmt'. Naming a requirement is not obtaining an inspector: the compiler emits every requirement as not_available with a reason, because no target profile is bound at compile time, and a real binding is established when a profile is selected."
+    },
+    "limits": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 },
+      "description": "What this Pack must never do, in the author's own words. minItems 1: a candidate that states no boundary has not been thought about, and the compiler cannot invent one for it - boundaries.never is the field a reviewer reads to decide what they are agreeing to."
+    },
+    "unknowns": {
+      "type": "array",
+      "maxItems": 30,
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 },
+      "description": "What the author could not determine. Present so a model can say so instead of guessing, which is the behaviour the whole blueprint step exists to buy."
+    },
+    "human_questions": {
+      "type": "array",
+      "maxItems": 30,
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 },
+      "description": "Decisions the author is explicitly handing to a person. Carried through compilation into the review packet unchanged."
+    }
+  }
+}

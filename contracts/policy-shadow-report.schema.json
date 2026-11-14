@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/policy-shadow-report.schema.json",
+  "title": "PolicyShadowReport",
+  "description": "NON-AUTHORITATIVE. What a selected policy baseline WOULD have said about the deterministic findings of one attempt. This packet is not evidence: it never changes a check status, never gates delivery, and never turns a FAIL into a PASS. Produced by the shadow evaluator (Block 2-P pilot); a model may propose a disposition but never decides one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "attempt_number", "mode", "authoritative", "baseline_ref",
+    "dispositions", "evaluated_count", "unclassified_count"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "policy_shadow" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "attempt_number": { "type": "integer", "minimum": 1 },
+
+    "mode": {
+      "const": "shadow",
+      "description": "Only 'shadow' exists today. A future enforcing mode must be a visible contract change, never a silent behavioural one."
+    },
+    "authoritative": {
+      "const": false,
+      "description": "Always false. Present so that no consumer can render this packet as evidence by accident."
+    },
+
+    "baseline_ref": {
+      "description": "The versioned baseline this evaluation used, or null when no baseline is selected. Absence is not an error: baselines are unavailable by default and everything is then UNCLASSIFIED.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version_hash"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "version_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$",
+              "description": "Content hash of the baseline directory, recomputed on load. A mismatch is refused, not warned about."
+            }
+          }
+        }
+      ]
+    },
+
+    "dispositions": {
+      "type": "array",
+      "description": "One proposed disposition per deterministic finding evaluated. Proposals only.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check", "disposition", "reason", "proposed_by"],
+        "properties": {
+          "check": {
+            "type": "string",
+            "enum": ["fmt", "validate", "tflint", "checkov", "secret_scan", "dependency_scan", "plan_risk", "cost"]
+          },
+          "rule_id": {
+            "type": "string",
+            "description": "Scanner rule id, e.g. CKV_AWS_338. Absent when the finding carries none."
+          },
+          "finding_id": { "type": "string" },
+          "disposition": {
+            "type": "string",
+            "enum": ["DEFECT", "MISSING_DECISION", "OUT_OF_SCOPE", "UNSATISFIABLE", "UNCLASSIFIED"],
+            "description": "DEFECT: code should change. MISSING_DECISION: needs a parameter/choice the baseline does not supply — must never become LLM repair work. OUT_OF_SCOPE: control does not govern this workload class. UNSATISFIABLE: no code change can close it in this configuration (renamed from INAPPLICABLE in Block 4A, which read as a synonym of OUT_OF_SCOPE). UNCLASSIFIED: the baseline has no opinion — an expected and informative outcome, not a pilot failure."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this disposition. For a baseline-driven proposal this cites the baseline entry; it is never free-form model narration presented as fact."
+          },
+          "proposed_by": {
+            "type": "string",
+            "enum": ["baseline", "model", "default"],
+            "description": "'baseline' = deterministic lookup. 'model' = a skill proposed it and it carries no authority. 'default' = no baseline entry matched."
+          },
+          "parameter": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "For MISSING_DECISION: the specific decision required, so intake can ask one focused question instead of guessing.",
+            "required": ["key"],
+            "properties": {
+              "key": { "type": "string" },
+              "baseline_value": { "type": "string" },
+              "observed_value": { "type": "string" }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "disposition": { "const": "MISSING_DECISION" } } },
+            "then": { "required": ["parameter"] }
+          }
+        ]
+      }
+    },
+
+    "evaluated_count": { "type": "integer", "minimum": 0 },
+    "unclassified_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Primary pilot output: how much of the scanner surface the first profile does not yet speak to."
+    },
+    "error": {
+      "type": "string",
+      "description": "Set when the evaluator itself failed. A broken pilot degrades to a recorded error and must never fail a mission."
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/promotion-decision.schema.json",
+  "title": "PromotionDecision",
+  "description": "A HUMAN-ONLY record, deliberately separate from PackBuildProposal and PackBuildReviewPacket. Those two are builder-controlled and carry no APPROVED value anywhere; this one carries the verdict and can only be authored by a person in a reviewed commit. Nothing in the Pack Builder writes this record, and a test asserts no builder-side module can construct one. FAIL-CLOSED: APPROVED is valid only when evaluation_status is PASSED. A FAILED, NOT_RUN or UNKNOWN evaluation may be REJECTED or RETURN_FOR_REVISION and cannot be overridden into approval - the refusal lives in the contract, so every call site inherits it without remembering to. The record binds the exact candidate content hash, the evaluation RECORD's own hash, the evaluator version, a named reviewer and a timestamp, so an approval attaches to specific bytes rather than to a name that can change underneath it. Being well-formed is necessary and never sufficient: promotion execution re-reads and re-hashes both the candidate and its evaluation before accepting this decision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "decision_id", "candidate_pack_id", "candidate_content_hash", "candidate_tree_hash", "evaluation_record_hash", "evaluator_version", "evaluation_status", "decision", "reviewed_by", "decided_at"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "decision_id": { "type": "string", "minLength": 1 },
+    "request_id": { "type": ["string", "null"] },
+    "review_packet_id": { "type": ["string", "null"] },
+    "candidate_pack_id": { "type": "string", "minLength": 1 },
+    "candidate_content_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "The exact bytes approved. Editing the candidate afterwards invalidates this decision rather than inheriting it - promotion is immutable, and a change makes a new candidate version."
+    },
+    "candidate_tree_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Canonical hash over EVERY allowlisted candidate file - fixtures, Skill instruction files, schemas, templates, evaluation plan - each as normalised relative path plus sha256 of its content, sorted deterministically. candidate_content_hash is the manifest and prose, which is the pack's version identity; a candidate whose fixtures were rewritten keeps that hash while becoming a different pack. Both are bound because they answer different questions. Symlinks, unlisted files and unlisted directories are refusals, not silent inclusions; the single documented exclusion is EVALUATION.json, which binds TO this hash and cannot contain a hash of itself."
+    },
+    "evaluation_record_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "The evaluation RECORD's own hash. Without it a decision would bind only to a status string, and a re-run producing a different record could keep an old approval alive."
+    },
+    "evaluator_version": { "type": "string", "minLength": 1 },
+    "evaluation_status": {
+      "type": "string",
+      "enum": ["PASSED", "FAILED", "NOT_RUN", "UNKNOWN"],
+      "description": "What the deterministic evaluator said at decision time. NOT_RUN and UNKNOWN are representable on purpose: a status that cannot be written cannot be refused, and 'the evaluation never ran' would otherwise have to masquerade as FAILED. Only PASSED can carry an APPROVED decision."
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVED", "REJECTED", "RETURN_FOR_REVISION"],
+      "description": "The verdict. This enum exists ONLY on this human-authored record. APPROVED requires evaluation_status PASSED; the other two are always available."
+    },
+    "reviewed_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A named person. Not a service, not a role, not 'automation'."
+    },
+    "rationale": { "type": "string", "maxLength": 4000 },
+    "accepted_limitations": { "type": "array", "items": { "type": "string" } },
+    "capability_reviews_resolved": {
+      "type": "array",
+      "description": "Which requested_capability_reviews the reviewer explicitly considered. A capability nobody named here has not been granted by this decision.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "outcome"],
+        "properties": {
+          "capability": { "type": "string" },
+          "outcome": { "type": "string", "enum": ["denied", "deferred", "approved_for_separate_lease"] },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "decided_at": { "type": "string" }
+  }
+}

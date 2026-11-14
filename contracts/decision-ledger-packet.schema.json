@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/decision-ledger-packet.schema.json",
+  "title": "DecisionLedgerPacket",
+  "description": "Every input the build needs, classified before a generation token is spent. Each row is STATED (the user said it), DEFAULTED (a named source supplied it) or MUST_ASK (costly or irreversible, and no source could supply it). There is no fourth class: a row that cannot account for itself is invalid, not a best guess.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "provider", "iac_tool", "rows", "coverage"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "decision_ledger" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "provider": { "type": "string", "enum": ["aws", "azure", "gcp"] },
+    "iac_tool": { "type": "string", "enum": ["terraform", "opentofu"] },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DecisionRow" }
+    },
+    "coverage": {
+      "$ref": "common.schema.json#/$defs/CheckStatus",
+      "description": "Set difference of the ledger keys against the keys the decision catalogue declares required for this lane. A real check, reported like one."
+    },
+    "missing_keys": { "type": "array", "items": { "type": "string" } },
+    "coverage_not_run_reason": { "type": "string" },
+    "intake_refusal_code": {
+      "type": "string",
+      "description": "Set when the model half of intake could not run. The ledger still exists; nothing is simply marked STATED."
+    },
+    "intake_discarded": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Keys the extractor returned that were rejected, and why - an invented key, or a value outside the key's declared domain. Carried rather than logged: a ledger whose own input silently degrades is the one failure this artifact cannot absorb."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "coverage": { "const": "FAIL" } } },
+      "then": { "required": ["missing_keys"] }
+    },
+    {
+      "if": { "properties": { "coverage": { "const": "NOT_RUN" } } },
+      "then": { "required": ["coverage_not_run_reason"] }
+    }
+  ],
+  "$defs": {
+    "DecisionSource": {
+      "type": "string",
+      "description": "A source that RESOLVES. Free text is refused so 'best practice' cannot occupy the field. catalogue: carries no id because it means nothing else could supply the value.",
+      "pattern": "^(?:mission_profile:[A-Za-z0-9._-]{1,128}|target_profile:[A-Za-z0-9._-]{1,128}|policy_baseline:[A-Za-z0-9._-]{1,128}@[a-f0-9]{16}|knowledge:[A-Za-z0-9._/-]{1,256}@[a-f0-9]{16}|catalogue:(?:aws|azure|gcp))$"
+    },
+    "DecisionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "decision_class", "reversibility", "rationale"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "value": { "type": ["string", "null"] },
+        "decision_class": { "type": "string", "enum": ["STATED", "DEFAULTED", "MUST_ASK"] },
+        "source": {
+          "description": "A resolving source for DEFAULTED; for STATED only 'intake_conversation' (where the person said it), or absent.",
+          "anyOf": [{ "$ref": "#/$defs/DecisionSource" }, { "const": "intake_conversation" }]
+        },
+        "reversibility": { "type": "string", "enum": ["cheap", "costly", "irreversible"] },
+        "confidence": { "type": "string", "enum": ["high", "low"] },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "fallback_value": {
+          "type": ["string", "null"],
+          "description": "What would be used if a MUST_ASK goes unanswered. Never a substitute for asking."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "decision_class": { "const": "DEFAULTED" } } },
+          "then": {
+            "required": ["value", "source", "confidence"],
+            "properties": { "source": { "$ref": "#/$defs/DecisionSource" } }
+          }
+        },
+        {
+          "if": { "properties": { "decision_class": { "const": "STATED" } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "source": { "const": "intake_conversation" } }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decision_class": { "const": "DEFAULTED" },
+              "source": { "type": "string", "pattern": "^catalogue:" }
+            },
+            "required": ["source"]
+          },
+          "then": { "properties": { "confidence": { "const": "low" } } }
+        },
+        {
+          "if": { "properties": { "decision_class": { "const": "MUST_ASK" } } },
+          "then": {
+            "properties": { "reversibility": { "enum": ["costly", "irreversible"] } },
+            "not": { "anyOf": [{ "required": ["source"] }, { "required": ["value"] }] }
+          }
+        }
+      ]
+    }
+  }
+}

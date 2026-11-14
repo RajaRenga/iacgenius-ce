@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/knowledge-bundle.schema.json",
+  "title": "KnowledgeBundle",
+  "description": "The explicit, bounded set of advisory knowledge selected for one request. advisory_only and is_validation_truth are required fields rather than prose because a document must never be readable as an inspector result. Selection is declarative - by domain, scope or explicit id - and retrieval_method says so, because calling local file selection 'retrieval' would misdescribe the system.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_id", "retrieval_method", "retrieval_reason", "advisory_only", "is_validation_truth", "refs"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "domain": { "type": ["string", "null"] },
+    "scope": { "type": ["string", "null"] },
+    "retrieval_method": {
+      "type": "string",
+      "enum": ["local_declarative_selection"],
+      "description": "The only method implemented. No web fetch, no external vector database, no embedding service."
+    },
+    "retrieval_reason": { "type": "string", "minLength": 1 },
+    "advisory_only": {
+      "const": true,
+      "description": "Structural, not a flag someone can flip: a bundle that claimed otherwise would be asserting authority a document cannot hold."
+    },
+    "is_validation_truth": {
+      "const": false,
+      "description": "A knowledge excerpt can never satisfy an inspector requirement."
+    },
+    "refs": {
+      "type": "array",
+      "items": { "$ref": "https://contracts.iacgenius.com/v1/knowledge-source-ref.schema.json" }
+    },
+    "excerpts": {
+      "type": "array",
+      "maxItems": 12,
+      "description": "Bounded so a bundle cannot become a way to smuggle a corpus, or a prompt, into a worker payload.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "source_hash", "text"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "source_version": { "type": "string" },
+          "source_hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "heading": { "type": "string" },
+          "text": { "type": "string", "maxLength": 1200 }
+        }
+      }
+    }
+  }
+}

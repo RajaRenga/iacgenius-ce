@@ -1,0 +1,31 @@
+{
+  "cards": [],
+  "generated_at": "2026-09-06T09:34:50.675555+00:00",
+  "generator": "scripts/seal_skill.py",
+  "inputs": {
+    "authored_at": "2026-09-06",
+    "authored_by": "the tiered-component-generation build session",
+    "exclusive_role": "sizing",
+    "origin": "authored-locally"
+  },
+  "model": {
+    "profile": null,
+    "role": null,
+    "transport": null,
+    "used": false
+  },
+  "notes": "Sealed, NOT promoted. A human adds the registry entry below in a reviewed commit; until then no mission can load this version.",
+  "object": {
+    "content_hash": "141b4da25981285d",
+    "kind": "procedure",
+    "name": "size-enterprise"
+  },
+  "review": {
+    "reviewed_at": null,
+    "reviewed_by": null
+  },
+  "schema_version": "1.0.0",
+  "sources": [
+    "Written for docs/prd/tiered-component-generation.md. Shape guidance only - every concrete value is deliberately absent, because values belong to the policy baseline and the settled ledger. The connectivity-walk rules are ported from the engine's codegen-common in the iacgenius-vercel repository, which is the proven V1 prompt."
+  ]
+}

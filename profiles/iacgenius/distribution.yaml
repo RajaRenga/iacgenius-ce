@@ -1,0 +1,10 @@
+name: iacgenius
+version: 0.1.0
+description: "IaC Genius Community Edition: turn a request into validated Terraform/OpenTofu and a reviewable PR, on Hermes Agent. A deterministic desk holds the truth; the model proposes."
+hermes_requires: "==0.23.1"
+author: "IaCGenius"
+license: "Apache-2.0"
+env_requires:
+  - name: MODEL_API_KEY
+    description: "Your model provider API key"
+    required: true

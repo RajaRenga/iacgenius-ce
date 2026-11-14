@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/common.schema.json",
+  "title": "IaC Genius V2 shared contract definitions",
+  "$defs": {
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$",
+      "description": "Semver of the v1 contract line this payload conforms to."
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer", "producer_version"],
+      "properties": {
+        "producer": {
+          "type": "string",
+          "description": "Node/service that produced this packet, e.g. 'workflow.intent_node', 'validator.checkov'."
+        },
+        "producer_version": { "type": "string" },
+        "model": { "type": "string", "description": "LLM model id if an LLM was involved." },
+        "runtime": { "type": "string", "description": "Worker runtime identifier/version." },
+        "tool_versions": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Deterministic tool versions used, e.g. {\"terraform\": \"1.11.4\", \"checkov\": \"3.2.507\"}."
+        }
+      }
+    },
+    "ArtifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "description": "Path relative to the mission sandbox root." },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "CheckStatus": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "SKIPPED", "NOT_RUN", "UNKNOWN"],
+      "description": "Deterministic check result. Missing evidence must never be collapsed into PASS."
+    },
+    "Provider": { "type": "string", "enum": ["aws", "azure", "gcp"] },
+    "IacTool": { "type": "string", "enum": ["terraform", "opentofu"] },
+    "DeliveryLane": { "type": "string", "enum": ["minimal", "standard", "enterprise"] },
+    "SkillRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version_hash"],
+      "properties": {
+        "name": { "type": "string" },
+        "version_hash": {
+          "type": "string",
+          "description": "Immutable content hash of the promoted skill version. Candidates must never appear here."
+        }
+      }
+    },
+    "CapabilityLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "denied", "expires_at"],
+      "properties": {
+        "allowed": { "type": "array", "items": { "type": "string" } },
+        "denied": { "type": "array", "items": { "type": "string" } },
+        "expires_at": { "$ref": "#/$defs/Timestamp" }
+      },
+      "description": "Authority granted to a worker attempt. A skill never grants authority; the lease does."
+    },
+    "PacketEnvelope": {
+      "type": "object",
+      "required": ["schema_version", "packet_type", "mission_id", "created_at", "provenance"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" },
+        "packet_type": { "type": "string" },
+        "mission_id": { "type": "string" },
+        "created_at": { "$ref": "#/$defs/Timestamp" },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      },
+      "description": "Fields every packet must carry."
+    }
+  }
+}

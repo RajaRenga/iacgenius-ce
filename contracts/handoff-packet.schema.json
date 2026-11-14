@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/handoff-packet.schema.json",
+  "title": "HandoffPacket",
+  "description": "Structured handoff between graph nodes. The ONLY way state moves between nodes — no implicit shared memory, no reuse of worker conversation history.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "from_node", "to_node", "attempt_number"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "handoff" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "from_node": { "type": "string" },
+    "to_node": { "type": "string" },
+    "attempt_number": { "type": "integer", "minimum": 1 },
+    "task_packet_ref": { "type": "string", "description": "Id of the TaskPacket this handoff advances." },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/ArtifactRef" }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ids of ValidationPackets / PlanRiskPackets relevant to the next node."
+    },
+    "notes": { "type": "string" }
+  }
+}

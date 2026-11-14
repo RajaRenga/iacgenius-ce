@@ -1,0 +1,79 @@
+{
+  "asserts": {
+    "aws_provider_pin": "~> 6.58.0",
+    "file_layout": "multi-file"
+  },
+  "authority_claims": [],
+  "exclusive_role": "structure_advice",
+  "inputs": {
+    "allowed": [
+      "terraform_hcl_text",
+      "sandbox_file_layout",
+      "tool_and_provider_versions",
+      "stated_user_intent"
+    ]
+  },
+  "name": "terraform-structure-advisor",
+  "never_do": [
+    "run Terraform, OpenTofu, or any other tool",
+    "contact a module registry, provider registry, or any remote service",
+    "read, write, or request cloud keys of any kind",
+    "change a policy baseline or decide that a control applies",
+    "state that a check passes, that validation succeeded, or that code is compliant",
+    "deliver to GitHub or ask for a delivery to be approved",
+    "propose an apply, import, state, or destroy command",
+    "author or repair resource logic \u2014 that is the authoring skill's role"
+  ],
+  "outputs": {
+    "kind": "advisory_text",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-08-12",
+    "authored_by": "Rajagopal Rengarajan (owner) with the build session",
+    "origin": "authored-locally",
+    "source_reference": "Block 3 capability outline: structure/naming/layout advice, docs/reviews/BLOCK-3-SKILL-SYSTEM-DESIGN.md section 9"
+  },
+  "purpose": "Advise on Terraform module, file, resource, variable and output structure and syntax from static inputs only.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 4000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "low",
+  "rollback": {
+    "replaced_by": null,
+    "replaces": null
+  },
+  "schema_version": "1.0.0",
+  "trigger": {
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "terraform"
+    ],
+    "provider": [
+      "aws"
+    ],
+    "task_kind": [
+      "generate",
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

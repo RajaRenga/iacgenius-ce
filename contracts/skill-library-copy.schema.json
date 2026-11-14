@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SkillLibraryCopy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "organization_id",
+    "actor",
+    "source_name",
+    "version_hash"
+  ],
+  "properties": {
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "source_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "version_hash": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "asserts": {
+    "aws_provider_pin": "~> 6.58.0",
+    "finding_status_owner": "validators"
+  },
+  "authority_claims": [],
+  "exclusive_role": "finding_explanation",
+  "inputs": {
+    "allowed": [
+      "deterministic_validator_findings",
+      "referenced_artifact_text",
+      "tool_versions"
+    ]
+  },
+  "name": "validation-finding-explainer",
+  "never_do": [
+    "change a finding's status, severity, or count",
+    "mark a finding resolved, waived, or accepted",
+    "decide that a control applies or does not apply to a workload",
+    "edit, add to, or reinterpret a policy baseline",
+    "state that code is compliant or secure, or that validation succeeded",
+    "run a validator, scanner, or any other tool",
+    "deliver to GitHub or ask for a delivery to be approved",
+    "rewrite artifacts \u2014 repair proposals come from the authoring skill"
+  ],
+  "outputs": {
+    "kind": "advisory_text",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision",
+      "finding_status_change"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-08-12",
+    "authored_by": "Rajagopal Rengarajan (owner) with the build session",
+    "origin": "authored-locally",
+    "source_reference": "Block 3 capability outline: finding explanation and missing-decision drafting, docs/reviews/BLOCK-3-SKILL-SYSTEM-DESIGN.md section 9"
+  },
+  "purpose": "Explain raw deterministic validator findings and draft the missing-policy questions a human must answer.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 4000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "medium",
+  "rollback": {
+    "replaced_by": null,
+    "replaces": null
+  },
+  "schema_version": "1.0.0",
+  "trigger": {
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "terraform"
+    ],
+    "provider": [
+      "aws"
+    ],
+    "task_kind": [
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

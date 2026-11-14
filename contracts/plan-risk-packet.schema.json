@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/plan-risk-packet.schema.json",
+  "title": "PlanRiskPacket",
+  "description": "Normalized, deterministic representation of plan-level risk. Built by deterministic plan-JSON normalization, never by LLM parsing of raw plan text. The terraform-plan-risk-explainer skill consumes ONLY this packet.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "plan_source", "resource_changes"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "plan_risk" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "plan_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["plan_json", "static_analysis"], "description": "static_analysis = derived without running terraform plan (first slice)." },
+        "plan_json_ref": { "$ref": "common.schema.json#/$defs/ArtifactRef" }
+      }
+    },
+    "resource_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "action", "risk_level"],
+        "properties": {
+          "address": { "type": "string" },
+          "action": { "type": "string", "enum": ["create", "update", "delete", "replace", "no-op"] },
+          "risk_level": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+          "reasons": { "type": "array", "items": { "type": "string" } },
+          "data_loss_risk": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Values/behaviors not determinable statically. Must be surfaced, never guessed."
+    },
+    "data_loss_risks": { "type": "array", "items": { "type": "string" } }
+  }
+}

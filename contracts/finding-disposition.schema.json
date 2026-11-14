@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/finding-disposition.schema.json",
+  "title": "FindingDispositionRecord",
+  "description": "What a versioned policy profile says about ONE deterministic validator finding. A disposition is an opinion about a fact; it is never the fact. `evidence_ref` points AT the validator result and carries the status the validator produced — a disposition can never restate it as something else, and no disposition of any classification turns a FAIL into a PASS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id", "check", "evidence_ref", "classification", "explanation",
+    "baseline_ref", "proposed_by"
+  ],
+  "properties": {
+    "finding_id": { "type": "string", "minLength": 1 },
+    "rule_id": {
+      "type": "string",
+      "description": "Scanner rule id, e.g. CKV_AWS_338. Absent when the finding carries none — such findings are UNCLASSIFIED, because a baseline can only speak about rules it can name."
+    },
+    "check": {
+      "type": "string",
+      "enum": ["fmt", "validate", "tflint", "checkov", "secret_scan", "dependency_scan", "plan_risk", "cost", "requirement_conformance", "stack_interface", "stack_access", "stack_ownership", "stack_traceability"],
+      "description": "Wider than the validation packet's check list on purpose (spec-first stack build §6.5): a check that cannot be disposed of is an un-waivable hard block with no human route."
+    },
+    "evidence_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt_number", "check", "status"],
+      "description": "The validator result this disposition is about. Immutable from the disposition's side.",
+      "properties": {
+        "attempt_number": { "type": "integer", "minimum": 1 },
+        "check": { "type": "string", "minLength": 1 },
+        "status": {
+          "type": "string",
+          "enum": ["FAIL", "UNKNOWN"],
+          "description": "Only failing or unverifiable evidence gets a disposition. A PASS needs no policy opinion, and SKIPPED/NOT_RUN are honest non-results already."
+        }
+      }
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["DEFECT", "MISSING_DECISION", "OUT_OF_SCOPE", "UNSATISFIABLE", "UNCLASSIFIED"],
+      "description": "DEFECT: the code is wrong under any reasonable policy; eligible for bounded repair. MISSING_DECISION: depends on a parameter nobody has chosen — routes to a human and must NEVER consume an LLM repair attempt. OUT_OF_SCOPE: the control does not apply to this workload class. UNSATISFIABLE: no code change can close it (e.g. S3 cannot log to itself). UNCLASSIFIED: the baseline has no opinion — blocking, because silence is not permission.",
+      "$comment": "UNSATISFIABLE replaced INAPPLICABLE in Block 4A: 'inapplicable' was ambiguous against OUT_OF_SCOPE, and the new name states the actual property."
+    },
+    "proposed_action": {
+      "type": "string",
+      "description": "What would address it. Advisory text; performing it is a separate, deterministic or human-approved act."
+    },
+    "explanation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this classification. For a baseline-driven disposition this cites the baseline entry; it is never free-form model narration presented as fact."
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "For MISSING_DECISION: the specific decision required, so intake asks one focused question instead of guessing.",
+      "required": ["key"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "baseline_value": { "type": "string" },
+        "observed_value": { "type": "string" }
+      }
+    },
+    "baseline_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile_id", "version_hash"],
+      "description": "Which profile version produced this disposition. Carried so an acceptance can be bound to it and invalidated when it changes.",
+      "properties": {
+        "profile_id": { "type": "string", "minLength": 1 },
+        "version_hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+      }
+    },
+    "proposed_by": {
+      "type": "string",
+      "enum": ["baseline", "default"],
+      "description": "'baseline' = deterministic hash-bound lookup. 'default' = no entry matched, therefore UNCLASSIFIED. 'model' is deliberately ABSENT from this enum: a model may explain a finding but may never classify one, and closing the data route matters as much as forbidding the claim."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "classification": { "const": "MISSING_DECISION" } } },
+      "then": { "required": ["parameter"] }
+    }
+  ]
+}

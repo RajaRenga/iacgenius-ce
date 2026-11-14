@@ -1,0 +1,82 @@
+{
+  "asserts": {
+    "default_size": "chosen when a person has not stated one",
+    "size_is_a_posture": "how much to build; the VALUES stay in the policy baseline and the settled ledger"
+  },
+  "authority_claims": [],
+  "exclusive_role": "sizing",
+  "inputs": {
+    "allowed": [
+      "capability_bundle",
+      "terraform_hcl_text",
+      "static_diagnostics",
+      "tool_and_provider_versions",
+      "settled_decision_ledger",
+      "stated_user_intent"
+    ]
+  },
+  "name": "size-standard",
+  "never_do": [
+    "add a resource to make a scanner quiet",
+    "substitute a value for one the settled ledger already decided",
+    "quote a provider version, a retention period, a key owner or any other concrete value - those come from decisions.json and facts.json",
+    "run Terraform, OpenTofu, or any other tool",
+    "access Terraform state, cloud APIs, or cloud credentials",
+    "claim the result is compliant, verified or ready"
+  ],
+  "outputs": {
+    "kind": "advisory_patch_proposal",
+    "must_not_claim": [
+      "validation_pass",
+      "compliance",
+      "delivery_success",
+      "policy_decision"
+    ]
+  },
+  "provenance": {
+    "authored_at": "2026-09-06",
+    "authored_by": "the tiered-component-generation build session",
+    "origin": "authored-locally",
+    "source_reference": "Written for docs/prd/tiered-component-generation.md. Shape guidance only - every concrete value is deliberately absent, because values belong to the policy baseline and the settled ledger. The connectivity-walk rules are ported from the engine's codegen-common in the iacgenius-vercel repository, which is the proven V1 prompt."
+  },
+  "purpose": "The platform default. Build the request, the resources it depends on, and the supporting pieces a reviewer expects - no more.",
+  "read_paths": [
+    "sandbox/**"
+  ],
+  "required_capabilities": [
+    "read:sandbox_artifacts",
+    "write:mission_sandbox"
+  ],
+  "requires": {
+    "binaries": [],
+    "credentials": [],
+    "max_output_tokens": 6000,
+    "network": [],
+    "processes": [],
+    "timeout_seconds": 0
+  },
+  "risk": "medium",
+  "schema_version": "1.0.0",
+  "trigger": {
+    "build_tier": [
+      "standard"
+    ],
+    "delivery_lane": [
+      "standard"
+    ],
+    "iac_tool": [
+      "terraform",
+      "opentofu"
+    ],
+    "provider": [
+      "aws",
+      "azure",
+      "gcp"
+    ],
+    "task_kind": [
+      "generate",
+      "repair"
+    ]
+  },
+  "write_paths": []
+}

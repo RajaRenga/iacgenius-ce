@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/inspector-requirement.schema.json",
+  "title": "InspectorRequirement",
+  "description": "A named, provider-neutral evidence requirement. The kernel says 'this envelope needs iac-format and artifact-secret-scan'; a target profile decides that iac-format means terraform fmt today and something else tomorrow. The generic name is the contract; the binding is data. This is what stops the core from learning the name of a scanner.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requirement_id", "blocking"],
+  "properties": {
+    "requirement_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Generic inspector name, e.g. artifact-integrity, iac-format, iac-lint. Never a tool name."
+    },
+    "blocking": {
+      "type": "boolean",
+      "description": "Whether a downstream handoff may be produced without this requirement satisfied. Non-blocking requirements still record evidence - they simply do not stop the composition."
+    },
+    "applies_to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Artifact paths this requirement covers. Empty means every artifact in the manifest."
+    },
+    "description": { "type": "string" }
+  }
+}

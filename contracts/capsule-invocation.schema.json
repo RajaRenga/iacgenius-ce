@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/capsule-invocation.schema.json",
+  "title": "CapsuleInvocation",
+  "description": "One call into one pack. Everything the runner needs and nothing it does not: which pack, which input envelope, which workspace, which authority, what budget. There is no prompt field and no command field - a pack does not get to say what runs, only what it needs, which is the same rule the deterministic-compute-fabric proposal applies to inspectors.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "pack",
+    "mission_id",
+    "thread_id",
+    "organization_id",
+    "attempt",
+    "workspace_root",
+    "lease",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "invocation_id": { "type": "string", "minLength": 1 },
+    "pack": { "$ref": "agent-pack-reference.schema.json" },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "thread_id": { "type": "string", "minLength": 1 },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "input_envelope_id": {
+      "type": ["string", "null"],
+      "description": "Null only for the first step of a composition, which is fed by the MissionDefinition itself."
+    },
+    "workspace_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One tenant, one mission, one attempt. Never shared, never reused."
+    },
+    "lease": {
+      "$ref": "common.schema.json#/$defs/CapabilityLease",
+      "description": "Authority for this invocation. The pack DECLARES what it needs; this is what it was actually granted, and the two are not the same thing."
+    },
+    "target_profile_id": {
+      "type": ["string", "null"],
+      "description": "Which binding of generic names to concrete tooling applies. Null for packs that need none."
+    },
+    "budget_tokens": { "type": "integer", "minimum": 0 },
+    "timeout_seconds": { "type": "integer", "minimum": 1 },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  }
+}

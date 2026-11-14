@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/policy-profile-reference.schema.json",
+  "title": "PolicyProfileReference",
+  "description": "Which versioned policy profile a mission is being judged against, pinned to an immutable content hash. A mission without one has no policy-required findings and no policy gate. Selection is a HUMAN act recorded with a verified identity — a model may never select or change a profile, because the profile is the thing that decides what its output will be measured against.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "version", "version_hash", "scope", "selected_by", "selected_at"],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Registry key, e.g. 'aws-terraform-standard'."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Human-facing version. The HASH is what binds an acceptance; this exists so people can talk about it."
+    },
+    "version_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Content hash of the sealed profile, recomputed from content on every load. A mismatch is refused, never warned about. An acceptance made under this hash does not survive a change to it."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "iac_tool", "workload_class", "posture"],
+      "description": "What this profile is allowed to speak about. provider and iac_tool are frozen literals: widening the platform must be a visible contract change, not a data change.",
+      "properties": {
+        "provider": { "const": "aws" },
+        "iac_tool": { "const": "terraform" },
+        "workload_class": { "type": "string", "minLength": 1 },
+        "posture": { "type": "string", "minLength": 1 }
+      }
+    },
+    "selected_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Verified user id from the server session. Never client-supplied."
+    },
+    "selected_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/task-packet.schema.json",
+  "title": "TaskPacket",
+  "description": "Unit of work handed to a fresh, bounded LLM worker. Every retry is a NEW TaskPacket with an incremented attempt_number; previous worker session history is never reused.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "thread_id", "organization_id", "provider", "iac_tool", "delivery_lane",
+    "user_requirements", "selected_skills", "capability_lease", "attempt_number", "task_kind"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "task" },
+    "mission_id": { "type": "string" },
+    "thread_id": { "type": "string", "description": "LangGraph durable thread id." },
+    "organization_id": { "type": "string", "description": "organization id — tenant scope. Required on every mission." },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "provider": { "$ref": "common.schema.json#/$defs/Provider" },
+    "iac_tool": { "$ref": "common.schema.json#/$defs/IacTool" },
+    "delivery_lane": { "$ref": "common.schema.json#/$defs/DeliveryLane" },
+    "task_kind": {
+      "type": "string",
+      "enum": ["generate", "repair"],
+      "description": "generate = initial IaC generation; repair = bounded repair attempt fed only artifacts + diagnostics."
+    },
+    "user_requirements": { "type": "string" },
+    "artifact_paths": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/ArtifactRef" },
+      "description": "Existing sandbox artifacts the worker may read (empty on first generation)."
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Deterministic diagnostics driving a repair attempt. Empty for task_kind=generate."
+    },
+    "selected_skills": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/SkillRef" },
+      "description": "Ordered SkillSet chosen by the resolver. Small; never 'all skills'."
+    },
+    "capability_lease": { "$ref": "common.schema.json#/$defs/CapabilityLease" },
+    "attempt_number": { "type": "integer", "minimum": 1 },
+    "max_attempts": { "type": "integer", "minimum": 1, "default": 3 },
+    "delivery_target": {
+      "description": "Where a CONFIRMED delivery would go, resolved from a tenant-scoped server-side connection. Carried on the packet so the target is durable with the mission rather than read from mutable server config at delivery time. Absent means no target was authorized and delivery fails closed. This NEVER carries a credential: the client selects a connection_id, the server holds the token, and authorization is re-checked at delivery.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["connection_id", "repository", "base_branch"],
+      "properties": {
+        "connection_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Server-side connection this target was authorized against. The only delivery field a client may choose."
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$",
+          "description": "owner/repo, resolved server-side from the connection — never accepted from the client."
+        },
+        "base_branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Branch point and PR target. Never written to; the mission always commits to a generated iacgenius/<mission_id> branch."
+        },
+        "authorized_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+        "authorized_for_organization": {
+          "type": "string",
+          "description": "Tenant the authorization was granted to. Re-checked at delivery so a durable checkpoint cannot outlive its grant."
+        }
+      }
+    }
+  }
+}

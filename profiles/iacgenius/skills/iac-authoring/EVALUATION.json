@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "skill": "iac-authoring",
+  "version_hash": "e59cafd9a4d8eb9f",
+  "evaluated_at": "2026-09-04T17:39:52.225953+00:00",
+  "harness": "app.skill_eval",
+  "status": "PASSED",
+  "failed_cases": [],
+  "cases": [
+    {
+      "case": "E0",
+      "title": "manifest is structurally valid",
+      "status": "PASSED",
+      "detail": "all required fields present and well-typed"
+    },
+    {
+      "case": "E1",
+      "title": "selected for every declared trigger",
+      "status": "PASSED",
+      "detail": "selected for task_kind ['generate', 'repair']"
+    },
+    {
+      "case": "E2",
+      "title": "refuses every out-of-scope mission",
+      "status": "PASSED",
+      "detail": "provider, iac_tool, delivery_lane and task_kind each refuse"
+    },
+    {
+      "case": "E3",
+      "title": "blocked when the lease withholds a required capability",
+      "status": "PASSED",
+      "detail": "each of ['read:sandbox_artifacts', 'write:mission_sandbox'] is load-bearing"
+    },
+    {
+      "case": "E4",
+      "title": "no hidden network, process, binary or credential requirement",
+      "status": "PASSED",
+      "detail": "manifest declares none and the prose asks for none"
+    },
+    {
+      "case": "E5",
+      "title": "output contract is declared and complete",
+      "status": "PASSED",
+      "detail": "kind=advisory_patch_proposal, must_not_claim covers the mandatory set"
+    },
+    {
+      "case": "E6",
+      "title": "collides only where it should",
+      "status": "PASSED",
+      "detail": "no conflict with promoted peers; an identical twin is caught"
+    },
+    {
+      "case": "E7",
+      "title": "resolution is indifferent to injected instructions",
+      "status": "PASSED",
+      "detail": "skill prose is clean; resolution byte-identical with hostile input"
+    },
+    {
+      "case": "E8",
+      "title": "claims no authority over evidence, policy, approval or delivery",
+      "status": "PASSED",
+      "detail": "manifest declares none and the prose asserts none"
+    },
+    {
+      "case": "E9",
+      "title": "resolution is deterministic",
+      "status": "PASSED",
+      "detail": "50 resolutions over shuffled registry order produced 1 distinct result(s)"
+    }
+  ],
+  "limitations": [
+    "evaluates the declaration, the prose and the resolver \u2014 not model behavior",
+    "no model is called and no tokens are spent",
+    "a claim of deterministic GENERATION is not evaluated here"
+  ]
+}

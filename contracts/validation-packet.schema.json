@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/validation-packet.schema.json",
+  "title": "ValidationPacket",
+  "description": "Result of ONE deterministic check over the mission sandbox. Produced only by validator nodes running real tools; never by an LLM.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "attempt_number", "check", "status", "tool"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "validation" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+    "attempt_number": { "type": "integer", "minimum": 1 },
+    "check": {
+      "type": "string",
+      "enum": ["fmt", "validate", "tflint", "checkov", "secret_scan", "dependency_scan", "plan_risk", "cost"]
+    },
+    "status": { "$ref": "common.schema.json#/$defs/CheckStatus" },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "exit_code": { "type": "integer" },
+    "started_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "finished_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "message"],
+        "properties": {
+          "id": { "type": "string" },
+          "rule_id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+          "message": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "evidence_ref": { "$ref": "common.schema.json#/$defs/ArtifactRef" }
+        }
+      }
+    },
+    "raw_output_ref": {
+      "$ref": "common.schema.json#/$defs/ArtifactRef",
+      "description": "Hash-addressed raw tool output stored in the mission evidence store."
+    },
+    "skipped_reason": { "type": "string" },
+    "not_run_reason": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "SKIPPED" } } },
+      "then": { "required": ["skipped_reason"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "NOT_RUN" } } },
+      "then": { "required": ["not_run_reason"] }
+    }
+  ]
+}

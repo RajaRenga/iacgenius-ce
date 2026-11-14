@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/skill-resolution-packet.schema.json",
+  "title": "SkillResolutionPacket",
+  "description": "NON-AUTHORITATIVE. The full, deterministic record of which promoted skill versions were selected for one mission and — equally important — which were considered and refused, with reasons. This packet is not evidence: nothing reads it to route, to decide a check status, or to gate delivery. It exists so that a person can see what shaped the worker's proposal, including the skills that did not.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "packet_type", "mission_id", "created_at", "provenance",
+    "authoritative", "selected", "considered", "conflicts", "unavailable",
+    "needs_human_decision"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "packet_type": { "const": "skill_resolution" },
+    "mission_id": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" },
+
+    "authoritative": {
+      "const": false,
+      "description": "Always false. Present so that no consumer can render a skill's advice as evidence by accident."
+    },
+
+    "selected": {
+      "type": "array",
+      "description": "Promoted versions injected into this mission's worker, in deterministic role order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version_hash", "lifecycle_state", "evaluation_status", "exclusive_role"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "version_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$",
+            "description": "Content hash over skill.json AND SKILL.md together, recomputed on load. A mismatch makes the version unavailable — it is never silently used."
+          },
+          "lifecycle_state": { "const": "PROMOTED" },
+          "evaluation_status": {
+            "type": "string",
+            "enum": ["PASSED", "FAILED", "NOT_RUN", "LEGACY"],
+            "description": "Read from the registry, never from the skill. A UI may only say 'verified' when this is PASSED; absent or failed renders as absent or failed, never as blank."
+          },
+          "exclusive_role": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string" },
+          "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+          "never_do": { "type": "array", "items": { "type": "string" } },
+          "required_capabilities": { "type": "array", "items": { "type": "string" } },
+          "path": { "type": "string" }
+        }
+      }
+    },
+
+    "considered": {
+      "type": "array",
+      "description": "EVERY version the resolver looked at, with its outcome and a machine-readable reason code. Carried in full because a rejection nobody can see is indistinguishable from a skill that was never there.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version_hash", "lifecycle_state", "outcome", "reason_code", "reason"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "version_hash": { "type": "string", "minLength": 1 },
+          "lifecycle_state": {
+            "type": "string",
+            "enum": [
+              "DISCOVERED", "QUARANTINED", "REBUILD_SPEC", "IMPLEMENTED_CANDIDATE",
+              "EVALUATED", "HUMAN_APPROVED", "PROMOTED", "REJECTED", "RETIRED"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": ["SELECTED", "NOT_SELECTED", "BLOCKED", "NEEDS_HUMAN_DECISION"],
+            "description": "BLOCKED is a refusal on principle (lease excess, forbidden authority, integrity failure). NEEDS_HUMAN_DECISION is a genuine conflict a machine must not resolve by guessing — it is never settled by prompt wording."
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "trigger_match", "not_promoted", "unverified_promotion", "trigger_mismatch",
+              "lease_denied",
+              "forbidden_authority", "integrity_failure", "overlapping_exclusive_role",
+              "duplicate_authority", "contradictory_assumptions", "write_ownership",
+              "external_requirements"
+            ]
+          },
+          "reason": { "type": "string", "minLength": 1 },
+          "evaluation_status": {
+            "type": "string",
+            "enum": ["PASSED", "FAILED", "NOT_RUN", "LEGACY"]
+          },
+          "denied_capabilities": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "conflicts": {
+      "type": "array",
+      "description": "Conflicts detected BEFORE the worker runs, so a mission never spends tokens on a SkillSet that was never coherent.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["conflict", "skills", "outcome", "detail"],
+        "properties": {
+          "conflict": {
+            "type": "string",
+            "enum": [
+              "overlapping_exclusive_role", "duplicate_authority",
+              "contradictory_assumptions", "write_ownership", "external_requirements"
+            ]
+          },
+          "skills": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "outcome": { "type": "string", "enum": ["BLOCKED", "NEEDS_HUMAN_DECISION"] },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "unavailable": {
+      "type": "array",
+      "description": "Promoted versions that failed their integrity check. A promoted version whose content no longer hashes to its approved hash is a security event, not a missing file — reported here, never silently dropped.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version_hash", "reason"],
+        "properties": {
+          "name": { "type": "string" },
+          "version_hash": { "type": "string" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "needs_human_decision": {
+      "type": "boolean",
+      "description": "True when at least one conflict must be resolved by a person. The resolver never breaks such a tie itself."
+    },
+
+    "error": {
+      "type": "string",
+      "description": "Set when resolution itself failed. A broken registry degrades to a recorded error and an empty SkillSet — a mission runs with no skills rather than with unverified ones."
+    }
+  }
+}

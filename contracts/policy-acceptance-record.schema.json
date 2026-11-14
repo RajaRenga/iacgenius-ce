@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/policy-acceptance-record.schema.json",
+  "title": "PolicyAcceptanceRecord",
+  "description": "An explicit human decision to accept, or refuse to accept, specific failing findings under a specific policy version. Immutable once written. This record is the ONLY thing that can make a blocking finding non-blocking for delivery — and it does so without touching the finding: the validator's FAIL stays FAIL, in the evidence and in the UI, for the life of the mission. A delivery covered by one of these is 'delivered with an accepted exception', never 'compliant' and never 'passed'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "acceptance_id", "decision", "accepted_by", "organization_id",
+    "mission_id", "thread_id", "finding_refs", "reason", "baseline_ref", "created_at", "audit"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "acceptance_id": { "type": "string", "minLength": 1 },
+    "decision": {
+      "type": "string",
+      "enum": ["ACCEPT_EXCEPTION", "REJECT"],
+      "description": "REJECT is recorded so a refusal is auditable. It has no routing consequence: the finding simply stays blocking."
+    },
+    "accepted_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Verified user id, taken from the server session. Never read from the request body — a caller who could name the approver could forge an approval."
+    },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenant that made the decision. An acceptance is refused for a mission in a different organization."
+    },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "thread_id": { "type": "string", "minLength": 1 },
+    "finding_refs": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Exactly which findings this covers. A blanket acceptance is not representable: there is no wildcard.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["finding_id"],
+        "properties": {
+          "finding_id": { "type": "string", "minLength": 1 },
+          "rule_id": { "type": "string" },
+          "check": { "type": "string" }
+        }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Written human rationale. The minimum length is real: 'ok' is not a rationale, and an acceptance nobody can justify later is one nobody should be able to make now."
+    },
+    "expires_at": {
+      "description": "Optional review date. Null means no expiry — permitted, but the UI shows it as such rather than leaving it blank.",
+      "oneOf": [{ "type": "null" }, { "$ref": "common.schema.json#/$defs/Timestamp" }]
+    },
+    "baseline_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile_id", "version_hash"],
+      "description": "The policy version this decision was made under. A resealed profile has a different hash, so every prior acceptance stops matching — a decision made under one policy is not a decision under another, and there is deliberately no carry-forward.",
+      "properties": {
+        "profile_id": { "type": "string", "minLength": 1 },
+        "version_hash": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+      }
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt_number", "evidence_digest"],
+      "description": "What was on screen when the person decided.",
+      "properties": {
+        "attempt_number": { "type": "integer", "minimum": 1 },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 of the evidence set the decision was made against. This is how STALE STATE is detected: if validators have re-run and the findings changed, the digest no longer matches and the acceptance does not apply to what is on screen now."
+        }
+      }
+    }
+  }
+}

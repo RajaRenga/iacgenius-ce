@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.iacgenius.com/v1/pack-need.schema.json",
+  "title": "PackNeed",
+  "description": "A durable record that a mission reached a step no approved capability covers. Creating one PAUSES the mission: it calls no model, builds no Pack, grants nothing and delivers nothing. It is the honest alternative to improvising an agent inside a customer run, which is the point at which every review in this system has already happened. A PackNeed carries the exact missing input and output contracts, the requested inspectors and capabilities, and the resolver's own evidence - so a Pack administrator can decide from what actually happened rather than from a description of it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "need_id", "organization_id", "required_produces", "state", "created_at"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "need_id": { "type": "string", "minLength": 1 },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "mission_id": {
+      "type": ["string", "null"],
+      "description": "The mission that discovered the gap, when there was one. Recorded for audit; it grants nothing and it does not scope access."
+    },
+    "requested_by": {
+      "type": ["string", "null"],
+      "description": "The verified identity whose mission hit the gap. A name for the audit row, never an authorization."
+    },
+    "provider": { "type": ["string", "null"] },
+    "iac_tool": { "type": ["string", "null"] },
+    "mission_kind": { "type": ["string", "null"] },
+    "required_accepts": {
+      "type": "array",
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+      "description": "Contract NAMES the missing capability would have to consume. Identifier-shaped so this field cannot carry prose, and therefore cannot carry a prompt into an administrator's inbox."
+    },
+    "required_produces": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+      "description": "At least one. A need that cannot say what the missing Pack would PRODUCE is not a need, it is a wish."
+    },
+    "requested_inspectors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string" },
+      "description": "Requirement names the step would need checked. Naming one is not obtaining one."
+    },
+    "requested_capabilities": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string" },
+      "description": "Authority the step appeared to need. Questions, not grants: nothing here expands a capability lease, and the runtime stays network=none / credentials=none regardless."
+    },
+    "resolver_evidence": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "What the resolver actually considered and why each candidate did not qualify. Reason CODES and pack hashes only - never a mission's requirement text, which is the customer's words and has no business in a platform inbox.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason_code"],
+        "properties": {
+          "pack_id": { "type": ["string", "null"] },
+          "version_hash": { "type": ["string", "null"] },
+          "reason_code": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": ["AWAITING_ADMINISTRATOR", "MAPPED_TO_EXISTING_PACK", "BUILD_REQUESTED", "DECLINED"],
+      "description": "Named for who the need is waiting on. There is no BUILT and no PROMOTED state: BUILD_REQUESTED means an administrator created a PackBuildRequest, which is itself only a question. Nothing here can become a Pack by a state transition."
+    },
+    "decided_by": {
+      "type": ["string", "null"],
+      "description": "Null until a named administrator decides. Its absence is what makes an automatic resolution impossible to represent."
+    },
+    "decided_at": { "type": ["string", "null"] },
+    "decision_note": { "type": "string", "maxLength": 2000 },
+    "build_request_id": { "type": ["string", "null"] },
+    "mapped_pack_id": { "type": ["string", "null"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": ["string", "null"] }
+  }
+}
