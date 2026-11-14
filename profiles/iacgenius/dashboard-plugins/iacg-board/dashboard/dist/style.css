@@ -1,0 +1,10 @@
+.iacg-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.iacg-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px;
+  border-bottom: 1px solid #e4e2db; background: #faf9f6; }
+.iacg-title { font: 14px/1.4 system-ui, sans-serif; color: #17171a; }
+.iacg-age { color: #6b6b66; }
+.iacg-btn { font: 13px system-ui, sans-serif; padding: 6px 14px; border: 1px solid #c9c6bd;
+  border-radius: 6px; background: #fff; cursor: pointer; }
+.iacg-btn:disabled { opacity: 0.6; cursor: default; }
+.iacg-err { padding: 8px 16px; color: #9a3412; background: #fff7ed; font: 13px system-ui, sans-serif; }
+.iacg-frame { flex: 1; width: 100%; border: 0; min-height: 0; background: #faf9f6; }

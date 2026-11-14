@@ -3,7 +3,7 @@
 *.tfstate.*
 local.tfvars
 *.tfvars.json
-dist/
+/dist/
 __pycache__/
 *.pyc
 .venv/
