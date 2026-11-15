@@ -121,7 +121,9 @@ def hermes_env(cfg, model_key):
               'HERMES_DASHBOARD_BASIC_AUTH_SECRET': login['secret'],
               'AWS_EC2_METADATA_DISABLED': 'true',
               # The agent may write generated code into the mission workspace as well as its home.
-              'HERMES_WRITE_SAFE_ROOT': f'/opt/data:{WORK_HOME.as_posix()}'}
+              'HERMES_WRITE_SAFE_ROOT': f'/opt/data:{WORK_HOME.as_posix()}',
+              # The dashboard Files tab browses the mission workspace so generated code is reviewable.
+              'HERMES_DASHBOARD_FILES_ROOT': WORK_HOME.as_posix()}
     if model_key:
         values['MODEL_API_KEY'] = model_key
     if any('\n' in v or '\r' in v for v in values.values()):

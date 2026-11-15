@@ -1,0 +1,28 @@
+{
+  "name": "iacg-wrapup",
+  "schema_version": "1.0.0",
+  "purpose": "Decision guide for unanswered questions (never fabricate a STATED value; record flagged DEFAULTs) plus a final summary of finished work: what was asked, assumed, decided, and what still needs the user.",
+  "exclusive_role": "decision-and-summary",
+  "inputs": {"allowed": ["settled_decision_ledger", "mission_evidence", "mission_state"]},
+  "outputs": {"kind": "work_summary", "must_not_claim": ["validation_pass", "compliance", "delivery_success"]},
+  "never_do": [
+    "present an assumed value as something the user stated",
+    "bypass a MUST_ASK gate by inventing an answer",
+    "skip the assumed / still-open sections of the summary",
+    "claim a check passed that did not run"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["status", "review"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 2500, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE decision-guide build session",
+    "authored_at": "2026-11-15",
+    "origin": "authored-locally",
+    "source_reference": "Owner: the agent asked questions, timed out, then 'made up the value and moved on'. Wants a decision guide + a summary of finished work and unanswered questions."
+  }
+}
