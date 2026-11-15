@@ -24,6 +24,22 @@
     var b = useState(false), busy = b[0], setBusy = b[1];
     var v = useState(0), version = v[0], setVersion = v[1];
     var last = useRef(null);
+    var pageRef = useRef(null);
+
+    // Fit the pane to the viewport: the dashboard route wrapper is auto-height, so size from the
+    // pane's actual top edge down to the bottom and re-fit on resize.
+    useEffect(function () {
+      function fit() {
+        var el = pageRef.current;
+        if (!el) return;
+        var top = el.getBoundingClientRect().top;
+        el.style.height = Math.max(360, window.innerHeight - top - 14) + "px";
+      }
+      fit();
+      var t = setTimeout(fit, 60);
+      window.addEventListener("resize", fit);
+      return function () { clearTimeout(t); window.removeEventListener("resize", fit); };
+    }, []);
 
     // Fetch through the host SDK (profile + auth), then render the desk's unchanged HTML document.
     useEffect(function () {
@@ -64,7 +80,7 @@
       ? "snapshot " + String(status.generated_at).replace("T", " ").slice(0, 16) + " UTC"
       : (status ? status.summary : "loading…");
 
-    return h("div", { className: "iacg-page" },
+    return h("div", { className: "iacg-page", ref: pageRef },
       h("div", { className: "iacg-bar" },
         h("div", { className: "iacg-title" },
           h("strong", null, "IaC Genius mission board"),
