@@ -5,7 +5,7 @@ import argparse
 import json
 import sys
 
-from . import board, deliver, gates, ledger, onboard, repair, schema_okf, validate, versions
+from . import board, capability, deliver, gates, ledger, onboard, repair, schema_okf, validate, versions
 from .store import Store
 
 
@@ -44,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("ledger", help="render the ledger prompt block (or --json for the PR-body packet)")
     p.add_argument("mission_id"); p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("brief", help="high-level design summary + compiled expert generation context")
+    p.add_argument("mission_id"); p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("rules-check", help="run the deterministic expert-rule detectors over the mission tree")
+    p.add_argument("mission_id"); p.add_argument("--tree")
 
     p = sub.add_parser("status", help="mission status, evidence and gate")
     p.add_argument("mission_id")
@@ -108,6 +114,24 @@ def main(argv=None) -> int:
             print(json.dumps(versions.read(store, args.mission_id)))
         elif args.cmd == "ledger":
             print(ledger.sorted_json(store, args.mission_id) if args.json else ledger.prompt_block(store, args.mission_id))
+        elif args.cmd == "brief":
+            capability.write_bundle(store, args.mission_id)
+            if args.json:
+                print(json.dumps({"summary": capability.summary(store, args.mission_id),
+                                  "context": capability.context_block(store, args.mission_id)}, indent=2))
+            else:
+                print(capability.summary(store, args.mission_id))
+                print("\n" + "=" * 72 + "\n")
+                print(capability.context_block(store, args.mission_id))
+        elif args.cmd == "rules-check":
+            mission = store.mission(args.mission_id)
+            if mission is None:
+                raise KeyError(f"unknown mission {args.mission_id}")
+            tree = args.tree or mission.get("tree")
+            if not tree:
+                raise ValueError("no mission tree; pass --tree")
+            findings = capability.check(tree, mission["provider"], mission["build_tier"])
+            print(json.dumps({"violations": findings, "count": len(findings)}, indent=2))
         elif args.cmd == "status":
             mission = store.mission(args.mission_id)
             if mission is None:

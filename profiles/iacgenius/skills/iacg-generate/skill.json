@@ -1,0 +1,40 @@
+{
+  "name": "iacg-generate",
+  "schema_version": "1.0.0",
+  "purpose": "The expert generation contract: consume the compiled capability brief and produce secure-by-default, well-structured Terraform. Checkov confirms; it does not drive.",
+  "exclusive_role": "generation",
+  "inputs": {
+    "allowed": [
+      "capability_bundle",
+      "settled_decision_ledger",
+      "tool_and_provider_versions",
+      "provider_schema_okf",
+      "stated_user_intent"
+    ]
+  },
+  "outputs": {
+    "kind": "terraform_artifacts",
+    "must_not_claim": ["validation_pass", "compliance", "delivery_success", "policy_decision"]
+  },
+  "never_do": [
+    "run terraform apply / tofu apply or reach a cloud write API",
+    "read a credential or secret",
+    "invent a resource argument the pinned schema does not declare",
+    "add a resource to make a scanner quiet",
+    "claim the result is compliant, verified or ready"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["generate", "repair"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 8000, "timeout_seconds": 0},
+  "risk": "medium",
+  "provenance": {
+    "authored_by": "the CE expert-generation build session",
+    "authored_at": "2026-11-15",
+    "origin": "authored-locally",
+    "source_reference": "Ports the V2 worker_prompt generation contract and the sealed cloud-aws / iac-authoring rule corpus into a lean CE generation skill driven by iacg_desk brief."
+  }
+}

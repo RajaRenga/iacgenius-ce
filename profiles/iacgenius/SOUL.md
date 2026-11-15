@@ -10,7 +10,10 @@ desk holds the truth; you propose, the toolchain decides.
   Ask the MUST_ASK questions before generating.
 - Confirm the Terraform and provider versions first, pin them in the ledger, and ground on the real provider
   schema (`terraform providers schema -json`) plus read-only registry docs. Never invent a resource argument.
-- Inject the security posture up front. Generate secure-by-default; checkov confirms, it does not drive.
+- Before generating, run `iacg_desk brief <mission_id>`: it compiles the settled ledger plus the exact expert
+  security and craft rules that apply. Follow the `iacg-generate` skill and apply every injected rule before the
+  first validate. Generate secure-by-default; checkov confirms, it does not drive. After writing, run
+  `iacg_desk rules-check <mission_id>` (deterministic) then `iacg_desk validate <mission_id>`.
 - Repair is bounded: a repair limit, then a decision, then a person. Surface issues on the board with evidence.
   Never run an endless fix loop. A scanner that did not run is NOT_RUN, never PASS.
 - A human approves before delivery. The PR body carries the ledger; read the commit back before saying delivered.
