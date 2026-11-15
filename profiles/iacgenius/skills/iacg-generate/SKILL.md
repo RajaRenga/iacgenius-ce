@@ -64,9 +64,20 @@ not ask for — an unrequested resource is unrequested cost and attack surface.
 
 ### Be honest
 
-- List every assumption you made and every unknown that would change the design.
+- List every assumption you made and every unknown that would change the design — but put them in a
+  separate `assumptions.md` (markdown) or as `#` comment lines. NEVER write prose, markdown bullets, or an
+  "Assumptions" section as raw text inside a `.tf` file: raw prose breaks `terraform validate`.
 - A finding that no code change closes is a finding a person decides about — record it, do not add
   infrastructure to silence a scanner.
+
+### References, required args, secrets (field-learned hard rules)
+
+- Every resource reference is THREE parts: `<type>.<name>.<attribute>` (e.g. `aws_instance.app.private_ip`).
+  NEVER `<type>.<attribute>` (e.g. `aws_instance.private_ip`) — that is a reference to an undeclared resource.
+- Include EVERY required argument the pinned schema declares (e.g. `aws_kms_alias.target_key_id`). Check the
+  schema excerpt before writing each resource.
+- Never hardcode a secret/password/token. Use a variable with `sensitive = true` and `default = null`.
+- Close every block you open; never leave a truncated/unclosed block at end of file.
 
 ## After writing
 
