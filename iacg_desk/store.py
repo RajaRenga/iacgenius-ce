@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS schema_cache(
 CREATE TABLE IF NOT EXISTS repairs(
   id INTEGER PRIMARY KEY AUTOINCREMENT, mission_id TEXT NOT NULL, attempt_number INTEGER NOT NULL,
   note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS build_sheets(
+  mission_id TEXT PRIMARY KEY, status TEXT NOT NULL, sheet_hash TEXT, confirmed_by TEXT,
+  confirmed_at TEXT, sheet TEXT NOT NULL, updated_at TEXT NOT NULL);
 """
 
 
@@ -154,3 +157,18 @@ class Store:
 
     def repairs(self, mid) -> list[dict]:
         return self._rows("SELECT * FROM repairs WHERE mission_id=? ORDER BY attempt_number", (mid,))
+
+    # -- build sheets -----------------------------------------------------
+    def sheet_put(self, mid, sheet: dict) -> None:
+        self._exec("INSERT INTO build_sheets VALUES (?,?,?,?,?,?,?) "
+                   "ON CONFLICT(mission_id) DO UPDATE SET status=excluded.status, sheet_hash=excluded.sheet_hash, "
+                   "confirmed_by=excluded.confirmed_by, confirmed_at=excluded.confirmed_at, sheet=excluded.sheet, "
+                   "updated_at=excluded.updated_at",
+                   (mid, sheet["status"], sheet.get("sheet_hash"), sheet.get("confirmed_by"),
+                    sheet.get("confirmed_at"), json.dumps(sheet, sort_keys=True), now()))
+
+    def sheet_get(self, mid) -> dict | None:
+        rows = self._rows("SELECT * FROM build_sheets WHERE mission_id=?", (mid,))
+        if not rows:
+            return None
+        return json.loads(rows[0]["sheet"])

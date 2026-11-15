@@ -78,7 +78,8 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
 
 # ------------------------------------------------------------------ iacg_mission
 
-ACTIONS = ("create", "status", "validate", "approve", "deliver", "onboard", "board")
+ACTIONS = ("create", "resolve", "answer", "skip", "sheet", "confirm",
+           "status", "validate", "approve", "deliver", "onboard", "board")
 
 
 def handle_mission(params: dict, **_kwargs) -> str:
@@ -110,6 +111,28 @@ def handle_mission(params: dict, **_kwargs) -> str:
     mid = str(p["mission_id"])
     if action == "status":
         return _run(["status", mid])
+    if action == "resolve":
+        args = ["resolve", mid]
+        for key, value in (p.get("stated") or {}).items():
+            args += ["--set", f"{key}={value}"]
+        if p.get("no_ask"):
+            args += ["--no-ask"]
+        return _run(args)
+    if action == "answer":
+        if not p.get("key") or p.get("value") is None:
+            return "answer needs key and value (the human's answer, in their words)"
+        return _run(["answer", mid, str(p["key"]), str(p["value"])])
+    if action == "skip":
+        args = ["skip", mid]
+        for key, value in (p.get("answers") or {}).items():
+            args += ["--answer", f"{key}={value}"]
+        return _run(args)
+    if action == "sheet":
+        return _run(["sheet", mid])
+    if action == "confirm":
+        if not p.get("by"):
+            return "confirm needs by: the human's name — the agent never confirms for them"
+        return _run(["confirm", mid, "--by", str(p["by"])])
     if action == "validate":
         return _run(["validate", mid] + (["--tree", str(p["tree"])] if p.get("tree") else []), timeout=1200)
     if action == "approve":
@@ -130,7 +153,12 @@ MISSION_SCHEMA = {
     "name": "iacg_mission",
     "description": (
         "IaC Genius desk (deterministic; never applies infrastructure). create = new mission + decision ledger "
-        "(STATED rows via stated, open questions via must_ask; versions pinned automatically). status = mission, "
+        "(target provider/iac_tool LOCKED at creation; versions pinned automatically). INTAKE FLOW: resolve = "
+        "model-free settle of the 15-key catalogue from the STATED keys you pass (smart defaults; only "
+        "costly/irreversible unknowns become MUST_ASK, each with a disclosed fallback); answer = answer one "
+        "MUST_ASK key; skip = fold remaining MUST_ASK to their disclosed defaults (answers optional); sheet = "
+        "the review-only build-sheet preview (scope finalize); confirm = freeze ONE hash of the agreed choices "
+        "(needs by: the human's name; generation runs only on the frozen revision). status = mission, "
         "evidence and delivery gate. validate = run terraform fmt/init/validate, tflint, checkov and the secret scan "
         "over the mission tree; missing tools are NOT_RUN, never PASS. approve = record a NAMED human acceptance "
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
@@ -152,7 +180,12 @@ MISSION_SCHEMA = {
                        "description": "ledger rows the user explicitly stated"},
             "must_ask": {"type": "array", "items": {"type": "string"},
                          "description": "keys that are costly/irreversible with no resolving source"},
-            "by": {"type": "string", "description": "human name for approve/onboard confirm — never the agent"},
+            "key": {"type": "string", "description": "answer: the ledger key being answered"},
+            "value": {"type": "string", "description": "answer: the human's value, in their words"},
+            "answers": {"type": "object", "additionalProperties": {"type": "string"},
+                        "description": "skip: keys to answer; any other open question takes its disclosed default"},
+            "no_ask": {"type": "boolean", "description": "resolve: declined path — costly keys take disclosed defaults"},
+            "by": {"type": "string", "description": "human name for approve/onboard/confirm — never the agent"},
             "finding": {"type": "string", "description": "soft finding id to accept; omit for delivery approval"},
             "reason": {"type": "string", "description": "the human's reason, in their words"},
             "repo": {"type": "string", "description": "deliver: owner/name"},

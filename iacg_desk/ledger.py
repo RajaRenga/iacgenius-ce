@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 
-from . import __version__
+from . import __version__, catalogue
 from .store import now
 
 ORIGINS = ("STATED", "SOURCE", "DEFAULTED", "MUST_ASK")
@@ -45,7 +45,7 @@ def answer(store, mid, key, value):
     if key not in rows:
         raise KeyError(f"no ledger row {key!r} on {mid}")
     store.ledger_upsert(mid, key, value, "STATED", "intake_conversation",
-                        rows[key]["rationale"], rows[key]["reversibility"])
+                        "you answered this when asked", rows[key]["reversibility"])
 
 
 def open_questions(store, mid) -> list[dict]:
@@ -94,10 +94,26 @@ def packet(store, mid) -> dict:
         "schema_version": "1.0.0", "packet_type": "decision_ledger", "mission_id": mid, "created_at": now(),
         "provenance": {"producer": "iacg_desk.ledger", "producer_version": __version__},
         "provider": mission["provider"], "iac_tool": mission["iac_tool"], "rows": rows,
-        # No decision catalogue ships with CE, so required-key coverage is honestly NOT_RUN.
-        "coverage": "NOT_RUN",
-        "coverage_not_run_reason": "no decision catalogue ships with CE; required-key coverage was not computed",
+        "coverage": _coverage(mission, rows),
+        "missing_keys": _missing(mission, rows),
     }
+
+
+def _covered(mission, rows) -> set:
+    return {r["key"] for r in rows if r.get("decision_class") in ("STATED", "DEFAULTED")}
+
+
+def _missing(mission, rows) -> list:
+    required = set(catalogue.required_keys(mission["provider"], mission["iac_tool"]))
+    asked = {r["key"] for r in rows if r.get("decision_class") == "MUST_ASK"}
+    return sorted(required - _covered(mission, rows) - asked)
+
+
+def _coverage(mission, rows) -> str:
+    required = set(catalogue.required_keys(mission["provider"], mission["iac_tool"]))
+    asked = {r["key"] for r in rows if r.get("decision_class") == "MUST_ASK"}
+    unsettled = required - _covered(mission, rows) - asked
+    return "FAIL" if unsettled else "PASS"
 
 
 def sorted_json(store, mid) -> str:

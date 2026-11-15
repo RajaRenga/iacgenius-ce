@@ -5,7 +5,8 @@ import argparse
 import json
 import sys
 
-from . import board, capability, deliver, gates, ledger, onboard, repair, schema_okf, validate, versions
+from . import (board, build_sheet, capability, deliver, gates, ledger, onboard, repair, resolver,
+               schema_okf, validate, versions)
 from .store import Store
 
 
@@ -36,6 +37,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("answer", help="answer a MUST_ASK question (becomes STATED)")
     p.add_argument("mission_id"); p.add_argument("key"); p.add_argument("value")
+
+    p = sub.add_parser("resolve", help="model-free resolver: settle the ledger from the catalogue (smart defaults)")
+    p.add_argument("mission_id")
+    p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="STATED key the user said")
+    p.add_argument("--no-ask", action="store_true", help="declined path: costly keys fall to disclosed defaults")
+
+    p = sub.add_parser("skip", help="fold MUST_ASK questions to their disclosed defaults (answer some via --answer)")
+    p.add_argument("mission_id")
+    p.add_argument("--answer", action="append", default=[], metavar="KEY=VALUE", help="answer this key; rest skip")
+
+    p = sub.add_parser("sheet", help="assemble the review-only build sheet preview (scope finalize)")
+    p.add_argument("mission_id")
+
+    p = sub.add_parser("confirm", help="freeze the build sheet (one hash); generation runs only on this revision")
+    p.add_argument("mission_id"); p.add_argument("--by", required=True, help="the human's name")
 
     p = sub.add_parser("pin", help="pin terraform/provider versions into the ledger")
     p.add_argument("mission_id")
@@ -108,6 +124,16 @@ def main(argv=None) -> int:
             ledger.answer(store, args.mission_id, args.key, args.value)
             ready, keys = ledger.generation_ready(store, args.mission_id)
             print(json.dumps({"answered": args.key, "generation_ready": ready, "must_ask": keys}))
+        elif args.cmd == "resolve":
+            stated = dict(_pair(t) for t in args.set)
+            print(json.dumps(resolver.resolve(store, args.mission_id, stated=stated, ask=not args.no_ask), indent=2))
+        elif args.cmd == "skip":
+            answers = dict(_pair(t) for t in args.answer)
+            print(json.dumps(resolver.apply_answers(store, args.mission_id, answers=answers), indent=2))
+        elif args.cmd == "sheet":
+            print(json.dumps(build_sheet.assemble(store, args.mission_id), indent=2))
+        elif args.cmd == "confirm":
+            print(json.dumps(build_sheet.confirm(store, args.mission_id, confirmed_by=args.by), indent=2))
         elif args.cmd == "pin":
             versions.pin(store, args.mission_id, terraform=args.terraform,
                          providers=dict(_pair(t) for t in args.provider) or None)

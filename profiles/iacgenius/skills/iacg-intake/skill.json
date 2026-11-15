@@ -1,0 +1,29 @@
+{
+  "name": "iacg-intake",
+  "schema_version": "1.0.0",
+  "purpose": "Phase 1 intake & scope finalize: lock the target, extract what the user STATED, settle smart defaults model-free, ask ONE batched durable question for costly/irreversible unknowns, then freeze the build sheet on the user's confirm.",
+  "exclusive_role": "intake",
+  "inputs": {"allowed": ["user_request", "decision_catalogue", "mission_ledger", "build_sheet"]},
+  "outputs": {"kind": "frozen_build_sheet", "must_not_claim": ["validation_pass", "compliance", "delivery_success", "user_stated_a_value_they_did_not"]},
+  "never_do": [
+    "choose a value for a key the user did not state — the desk resolver supplies defaults",
+    "mark a value STATED that the user did not say or answer",
+    "use a timed Clarify menu for the batched ask — present it as durable plain text",
+    "confirm the build sheet for the user — confirm needs their explicit yes and their name",
+    "let a mission change cloud or IaC tool mid-flight — that is a new mission"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["intake"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 4000, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE Phase-1 intake build session",
+    "authored_at": "2026-11-15",
+    "origin": "ported-from-v2",
+    "source_reference": "iacgenius-v2 services/workflow/app/{workload_intake,decision_resolver,decision_catalogue,build_sheet}.py; CE desk catalogue.py/resolver.py/build_sheet.py. Owner decisions 2026-11-15: catalogue-only, chat-first target lock, one freeze hash, all 15 keys, durable ask."
+  }
+}
