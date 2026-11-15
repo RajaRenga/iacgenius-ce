@@ -18,6 +18,7 @@ streaming:
 plugins:
   enabled:
     - iacg-desk
+    - iacg-board
 platform_toolsets:
   cli: [skills, clarify, file]
 kanban:

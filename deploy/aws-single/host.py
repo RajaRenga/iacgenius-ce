@@ -170,6 +170,14 @@ def sync_profile():
     shutil.copytree(package / 'dashboard-plugins' / 'iacg-board', tab,
                     ignore=shutil.ignore_patterns('__pycache__', 'local.json'))
     (tab / 'local.json').write_text(board_local)
+    # Dashboard plugin discovery is profile-scoped: the board must also live in the profile's own
+    # plugins dir, or the tab is invisible when the dashboard is opened on that profile.
+    profile_tab = profile / 'plugins' / 'iacg-board'
+    if profile_tab.exists():
+        shutil.rmtree(profile_tab)
+    shutil.copytree(package / 'dashboard-plugins' / 'iacg-board', profile_tab,
+                    ignore=shutil.ignore_patterns('__pycache__', 'local.json'))
+    (profile_tab / 'local.json').write_text(board_local)
     for path in [profile, *profile.rglob('*'), tab, *tab.rglob('*')]:
         if hasattr(os, 'lchown'):
             os.lchown(path, UID, UID)
