@@ -1,0 +1,27 @@
+{
+  "name": "iacg-status",
+  "schema_version": "1.0.0",
+  "purpose": "One-word health/status/onboarding report: toolchain versions, onboarding state, cache, and missions, with a readiness line. No complex instruction required from the user.",
+  "exclusive_role": "status",
+  "inputs": {"allowed": ["onboarding_record", "mission_board", "tool_and_provider_versions"]},
+  "outputs": {"kind": "status_report", "must_not_claim": ["validation_pass", "compliance", "delivery_success"]},
+  "never_do": [
+    "make the user type a tool action or long instruction",
+    "re-warm or re-download the cache when onboarding is CONFIRMED",
+    "claim a check passed that did not run"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["status"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 2000, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE status-skill build session",
+    "authored_at": "2026-11-15",
+    "origin": "authored-locally",
+    "source_reference": "Owner directive I1: a plain word (status/health/onboarding) returns one clean report instead of a complex tool instruction."
+  }
+}

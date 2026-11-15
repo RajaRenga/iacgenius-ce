@@ -24,6 +24,14 @@ Run `iacg_desk brief <mission_id>` FIRST. It returns:
 Also ground every resource argument on the pinned binary schema (`iacg_desk schema <provider> <version>
 --resource <type>`); never invent an argument the schema does not declare.
 
+## Where to write the code
+
+Write the generated .tf files into the mission's WRITABLE workspace tree: `/data/iacg-work/<mission_id>/`
+(the mission `tree` field). NEVER write into `/data/iacg/...` — that is the desk's read-only state and
+writes there fail with "Read-only file system". If the mission has no tree yet, create
+`/data/iacg-work/<mission_id>/` and use it. Validate with
+`iacg_mission action=validate mission_id=<id> tree=/data/iacg-work/<mission_id>`.
+
 ## Rules
 
 ### Apply every injected rule before the first validate

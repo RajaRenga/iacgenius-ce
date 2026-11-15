@@ -19,6 +19,9 @@ PACKAGE = ROOT / 'package'
 UID = 10000
 HERMES_HOME = Path('/data/hermes')
 DESK_HOME = Path('/data/iacg')
+# Generated mission code lives here, writable by the agent. DESK_HOME stays read-only in the
+# container so the agent can read desk state but never mutate the deterministic store.
+WORK_HOME = Path('/data/iacg-work')
 DESK_RUNDIR = Path('/run/iacg')
 DESK_SOCKET = DESK_RUNDIR / 'desk.sock'
 PROFILE = 'iacgenius'
@@ -116,7 +119,9 @@ def hermes_env(cfg, model_key):
               'HERMES_DASHBOARD_BASIC_AUTH_USERNAME': login['username'],
               'HERMES_DASHBOARD_BASIC_AUTH_PASSWORD': login['password'],
               'HERMES_DASHBOARD_BASIC_AUTH_SECRET': login['secret'],
-              'AWS_EC2_METADATA_DISABLED': 'true'}
+              'AWS_EC2_METADATA_DISABLED': 'true',
+              # The agent may write generated code into the mission workspace as well as its home.
+              'HERMES_WRITE_SAFE_ROOT': f'/opt/data:{WORK_HOME.as_posix()}'}
     if model_key:
         values['MODEL_API_KEY'] = model_key
     if any('\n' in v or '\r' in v for v in values.values()):
@@ -200,6 +205,9 @@ def install_desk_code():
     # The provider cache must be writable by the desk user (a root-owned plugins dir blocks init).
     (DESK_HOME / 'plugins').mkdir(parents=True, exist_ok=True)
     run('chown', '-R', f'{UID}:{UID}', str(DESK_HOME))
+    # Writable workspace for generated mission code (the agent writes here, not into read-only DESK_HOME).
+    WORK_HOME.mkdir(parents=True, exist_ok=True)
+    run('chown', '-R', f'{UID}:{UID}', str(WORK_HOME))
 
 
 def desk_unit():
@@ -234,7 +242,7 @@ Requires=docker.service
 [Service]
 ExecStartPre=/bin/sh -c 'n=0; while [ ! -S {DESK_SOCKET.as_posix()} ] && [ $$n -lt 60 ]; do n=$$((n+1)); sleep 1; done; exit 0'
 ExecStartPre=-/usr/bin/docker rm -f {CONTAINER}
-ExecStart=/usr/bin/docker run --rm --name {CONTAINER} --network {NETWORK} --env-file {RUNDIR.as_posix()}/hermes.env -p 127.0.0.1:{PORT}:{PORT} -v {HERMES_HOME.as_posix()}:/opt/data -v {DESK_RUNDIR.as_posix()}:{DESK_RUNDIR.as_posix()} -v {DESK_HOME.as_posix()}:{DESK_HOME.as_posix()}:ro -v {PACKAGE.as_posix()}:/opt/iacgenius-package:ro --memory {memory}m --pids-limit 1024 {cfg['image']} gateway run
+ExecStart=/usr/bin/docker run --rm --name {CONTAINER} --network {NETWORK} --env-file {RUNDIR.as_posix()}/hermes.env -p 127.0.0.1:{PORT}:{PORT} -v {HERMES_HOME.as_posix()}:/opt/data -v {DESK_RUNDIR.as_posix()}:{DESK_RUNDIR.as_posix()} -v {DESK_HOME.as_posix()}:{DESK_HOME.as_posix()}:ro -v {WORK_HOME.as_posix()}:{WORK_HOME.as_posix()} -v {PACKAGE.as_posix()}:/opt/iacgenius-package:ro --memory {memory}m --pids-limit 1024 {cfg['image']} gateway run
 ExecStop=/usr/bin/docker stop -t 30 {CONTAINER}
 Restart=always
 RestartSec=10

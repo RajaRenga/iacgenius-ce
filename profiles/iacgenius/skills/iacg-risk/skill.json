@@ -1,0 +1,28 @@
+{
+  "name": "iacg-risk",
+  "schema_version": "1.0.0",
+  "purpose": "Risk rubric for a mission's findings: correctness bugs hard-block (never ship), security posture is fix-or-accept-by-name, style is advisory. Makes 'usable with accepted security findings' legible.",
+  "exclusive_role": "risk-reporting",
+  "inputs": {"allowed": ["mission_evidence", "finding_severity", "delivery_gate"]},
+  "outputs": {"kind": "risk_report", "must_not_claim": ["validation_pass", "compliance", "delivery_success"]},
+  "never_do": [
+    "let an aggregate failed state stand alone without naming each failure tier",
+    "call a checkov security finding a code bug or a tflint ERROR mere style",
+    "present code with a correctness finding as ready to ship",
+    "accept a finding itself (acceptance is a named human decision)"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["status", "review"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 2500, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE risk-rubric build session",
+    "authored_at": "2026-11-15",
+    "origin": "authored-locally",
+    "source_reference": "Owner directive I2: checkov = security accept-or-fix; tflint ERROR = possible code bug; never ship a known bug. Presentation prototyped as a skill before gate code."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "iacg-code",
+  "schema_version": "1.0.0",
+  "purpose": "Show the exact generated .tf files for a mission so the user can explore the code, on demand.",
+  "exclusive_role": "code-viewing",
+  "inputs": {"allowed": ["mission_tree", "generated_tf_files"]},
+  "outputs": {"kind": "code_listing", "must_not_claim": ["validation_pass", "compliance", "delivery_success"]},
+  "never_do": [
+    "invent or paraphrase the code (show exact file bytes)",
+    "run apply or modify files when asked only to view",
+    "hide a .tf file because it is short"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["review", "status"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 6000, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE code-viewer build session",
+    "authored_at": "2026-11-15",
+    "origin": "authored-locally",
+    "source_reference": "Owner directive I4: the mission shows a tree path but the user cannot see the code; surface the generated .tf on demand."
+  }
+}
