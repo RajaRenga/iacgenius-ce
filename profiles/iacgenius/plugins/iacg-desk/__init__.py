@@ -79,7 +79,8 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
 # ------------------------------------------------------------------ iacg_mission
 
 ACTIONS = ("create", "resolve", "answer", "skip", "sheet", "confirm",
-           "status", "validate", "approve", "deliver", "onboard", "board")
+           "status", "validate", "approve", "deliver", "onboard", "board",
+           "schema", "brief", "rules-check")
 
 
 def handle_mission(params: dict, **_kwargs) -> str:
@@ -106,6 +107,16 @@ def handle_mission(params: dict, **_kwargs) -> str:
                     timeout=1800)
     if action == "board":
         return _run(["board"])
+    if action == "schema":
+        if not p.get("provider") or not p.get("version"):
+            return "schema needs provider and version (e.g. aws 6.58.0); pass resource (repeatable) for per-resource excerpts"
+        args = ["schema", str(p["provider"]), str(p["version"])]
+        resources = p.get("resource") or []
+        if isinstance(resources, str):
+            resources = [resources]
+        for r in resources:
+            args += ["--resource", str(r)]
+        return _run(args, timeout=300)
     if not p.get("mission_id"):
         return f"{action} needs mission_id"
     mid = str(p["mission_id"])
@@ -133,6 +144,10 @@ def handle_mission(params: dict, **_kwargs) -> str:
         if not p.get("by"):
             return "confirm needs by: the human's name — the agent never confirms for them"
         return _run(["confirm", mid, "--by", str(p["by"])])
+    if action == "brief":
+        return _run(["brief", mid] + (["--json"] if p.get("json") else []))
+    if action == "rules-check":
+        return _run(["rules-check", mid] + (["--tree", str(p["tree"])] if p.get("tree") else []))
     if action == "validate":
         return _run(["validate", mid] + (["--tree", str(p["tree"])] if p.get("tree") else []), timeout=1200)
     if action == "approve":
@@ -163,8 +178,11 @@ MISSION_SCHEMA = {
         "over the mission tree; missing tools are NOT_RUN, never PASS. approve = record a NAMED human acceptance "
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
         "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. onboard = warm "
-        "the shared provider cache once, confirm, reuse. board = the mission board snapshot. MUST_ASK questions must "
-        "be answered (via the desk CLI 'answer') before any generation."),
+        "the shared provider cache once, confirm, reuse. board = the mission board snapshot. GROUNDING (binary schema "
+        "is truth, MCP is guidance): schema = per-resource excerpts from the cached provider schema OKF (needs provider "
+        "+ version, e.g. aws 6.58.0, and resource types) — use these to verify resource arguments before writing; "
+        "brief = the compiled expert generation context for a mission; rules-check = deterministic expert-rule "
+        "detectors over the mission tree. MUST_ASK questions must be answered (via 'answer') before any generation."),
     "parameters": {
         "type": "object",
         "properties": {
@@ -176,6 +194,10 @@ MISSION_SCHEMA = {
             "iac_tool": {"type": "string", "enum": ["terraform", "opentofu"]},
             "build_tier": {"type": "string", "enum": ["minimal", "standard", "enterprise"]},
             "tree": {"type": "string", "description": "mission tree with the generated .tf files"},
+            "version": {"type": "string", "description": "schema: provider version, e.g. 6.58.0"},
+            "resource": {"type": "array", "items": {"type": "string"},
+                         "description": "schema: resource types to excerpt, e.g. aws_vpc, aws_s3_bucket"},
+            "json": {"type": "boolean", "description": "brief: return the structured summary + context as JSON"},
             "stated": {"type": "object", "additionalProperties": {"type": "string"},
                        "description": "ledger rows the user explicitly stated"},
             "must_ask": {"type": "array", "items": {"type": "string"},
