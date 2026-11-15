@@ -73,6 +73,28 @@ not ask for — an unrequested resource is unrequested cost and attack surface.
 1. `iacg_desk rules-check <mission_id>` — the deterministic expert-rule detectors. Fix every violation.
 2. `iacg_desk validate <mission_id>` — the toolchain. Repair within the bounded budget; then a person decides.
 
+## Pitfalls (field-learned)
+
+- Grounding is socket-exposed on `iacg_mission`: `action=schema` (provider + version + resource[] →
+  per-resource excerpts from the cached binary provider schema OKF, with sha256; binary schema is truth,
+  MCP is guidance), `action=brief` (mission_id → settled ledger + applicable expert rules + output
+  contract), `action=rules-check` (mission_id → deterministic expert-rule violations over the mission
+  tree). Prefer these over CLI/registry fallbacks. If a deployment lacks them, say NOT_RUN honestly,
+  ground arguments on read-only registry docs at the EXACT pinned provider version, and let `validate`
+  (real binary) arbitrate the schema.
+- `rules-check` returning 0 violations does NOT mean the mission passes: checkov soft findings (e.g. KMS
+  root delegation, ledger-vs-scanner retention conflicts) are separate and still need named human
+  acceptance. Check `status` evidence + gate before claiming anything.
+- Full checkov finding text (id, message, file, line, severity) lives in `/data/iacg/board.json`; the
+  sqlite auto-extract truncates the findings cells, and grep on the raw .sqlite3 misses binary-stored text.
+- A KMS key policy's root-delegation statement (`kms:*` on `*`) trips CKV_AWS_109/111/356. In a key policy
+  `*` means THIS key; this is the AWS-standard pattern — propose named acceptance, do not narrow root
+  delegation below the AWS default to silence the scanner.
+- Checkov findings that conflict with a frozen ledger value (e.g. retention 30d vs CKV_AWS_338's 365d) are
+  human decisions: accept the ledger value or revise+re-confirm the sheet. Never silently change a settled value.
+- `approve` needs the human's name in their own words. A timed-out clarify leaves findings UNACCEPTED —
+  never record an acceptance under a name inferred from another mission; stop and report the open decisions.
+
 ## Never
 
 - Run `terraform apply` / `tofu apply`, read a credential, or reach a cloud write API.
