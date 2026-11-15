@@ -210,6 +210,16 @@ def install_desk_code():
     run('chown', '-R', f'{UID}:{UID}', str(WORK_HOME))
 
 
+def install_toolchain():
+    # The validation toolchain must exist on the host. Install at boot so a relaunch is reproducible;
+    # previously this was a manual step and did not survive a relaunch from the base AMI.
+    if shutil.which('terraform') and shutil.which('tflint') and shutil.which('checkov'):
+        return
+    script = SOURCE / 'toolchain' / 'install-toolchain.sh'
+    if script.exists():
+        run('bash', str(script))
+
+
 def desk_unit():
     return f'''[Unit]
 Description=IaC Genius CE desk (stdlib only, Unix socket API, no AWS credentials)
@@ -296,6 +306,7 @@ def main():
     config = PACKAGE / 'config.yaml'
     config.write_text(seed_model(config.read_text(), (cfg['model_name'], cfg['model_base_url']) if model_key else None))
     install_desk_code()
+    install_toolchain()
     units = {'iacg-desk.service': desk_unit(), 'iacgenius-hermes.service': hermes_unit(cfg), **checkpoint_units(cfg)}
     for name, body in units.items():
         Path('/etc/systemd/system', name).write_text(body)
