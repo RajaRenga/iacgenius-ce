@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "IaCGenius CE — from plain English to a reviewable PR",
+    "locale": "en",
+    "output": "docs/media/diagrams/ce-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/RajaRenga/iacgenius-ce.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "af56febda3c6061a7381b4b4129fa1753eed15b8"
+    }
+  },
+  "lanes": [
+    { "id": "you", "label": "You · the human" },
+    { "id": "desk", "label": "Deterministic desk · truth" },
+    { "id": "agent", "label": "Hermes agent · LLM + skills" },
+    { "id": "gate", "label": "Gates & repair", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "p_intake", "label": "Intake", "fromCol": 0, "toCol": 1 },
+    { "id": "p_freeze", "label": "Freeze", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "p_build", "label": "Generate", "fromCol": 3, "toCol": 3 },
+    { "id": "p_verify", "label": "Validate + decide", "fromCol": 4, "toCol": 4, "variant": "security" },
+    { "id": "p_ship", "label": "Deliver", "fromCol": 5, "toCol": 5, "variant": "emphasis" }
+  ],
+  "groups": [
+    { "id": "repair_loop", "label": "Bounded repair loop", "lane": "gate", "fromCol": 3, "toCol": 4, "variant": "security" },
+    { "id": "human_decision", "label": "Human decisions", "lane": "you", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["ask", "intake", "freeze", "generate", "validate", "decide", "approve", "deliver"],
+  "nodes": [
+    { "id": "ask", "lane": "you", "col": 0, "type": "external", "label": "Describe it", "sublabel": "plain English request",
+      "sources": [{ "path": "profiles/iacgenius/skills/iacg-intake/SKILL.md", "label": "intake skill" }] },
+    { "id": "intake", "lane": "desk", "col": 1, "type": "backend", "label": "Intake + resolve", "sublabel": "ledger · catalogue · knowledge", "tag": "ask only costly",
+      "sources": [{ "path": "iacg_desk/resolver.py", "line": 32, "label": "model-free resolver" }, { "path": "iacg_desk/ledger.py", "line": 22, "label": "decision ledger" }] },
+    { "id": "freeze", "lane": "desk", "col": 2, "type": "security", "label": "Freeze scope", "sublabel": "one build-sheet hash", "tag": "confirmed by name",
+      "sources": [{ "path": "iacg_desk/build_sheet.py", "line": 72, "label": "confirm + hash" }] },
+    { "id": "generate", "lane": "agent", "col": 3, "type": "backend", "label": "Generate stack", "sublabel": "LLM + skills · schema OKF",
+      "sources": [{ "path": "profiles/iacgenius/skills/iacg-generate/SKILL.md", "label": "generation contract" }, { "path": "iacg_desk/schema_okf.py", "line": 23, "label": "provider schema" }] },
+    { "id": "validate", "lane": "gate", "col": 4, "type": "cloud", "label": "Validate", "sublabel": "hard + soft checks",
+      "sources": [{ "path": "iacg_desk/validate.py", "line": 128, "label": "run toolchain" }, { "path": "iacg_desk/gates.py", "line": 8, "end_line": 10, "label": "hard / soft" }] },
+    { "id": "repair", "lane": "gate", "col": 3, "type": "security", "label": "Bounded repair", "sublabel": "budget 2 · then ask",
+      "sources": [{ "path": "iacg_desk/repair.py", "line": 10, "label": "budget" }, { "path": "iacg_desk/repair.py", "line": 17, "label": "record attempt" }] },
+    { "id": "decide", "lane": "you", "col": 4, "type": "frontend", "label": "Decide findings", "sublabel": "accept by name or fix",
+      "sources": [{ "path": "iacg_desk/gates.py", "line": 13, "label": "named acceptances" }] },
+    { "id": "approve", "lane": "you", "col": 5, "type": "security", "label": "Approve delivery", "sublabel": "named go-ahead",
+      "sources": [{ "path": "iacg_desk/gates.py", "line": 13, "label": "delivery approval" }] },
+    { "id": "deliver", "lane": "desk", "col": 5, "type": "cloud", "label": "Deliver", "sublabel": "PR + read-back · or ZIP",
+      "sources": [{ "path": "iacg_desk/deliver.py", "line": 45, "label": "PR + read-back" }, { "path": "iacg_desk/workspace.py", "line": 129, "label": "package ZIP" }] }
+  ],
+  "edges": [
+    { "id": "e_ask", "from": "ask", "to": "intake", "label": "request", "variant": "emphasis", "role": "main" },
+    { "id": "e_settle", "from": "intake", "to": "freeze", "label": "settled ledger", "variant": "emphasis", "role": "main" },
+    { "id": "e_frozen", "from": "freeze", "to": "generate", "label": "frozen revision", "variant": "emphasis", "role": "main" },
+    { "id": "e_toolchain", "from": "generate", "to": "validate", "label": "run toolchain", "variant": "emphasis", "role": "main" },
+    { "id": "e_hardpass", "from": "validate", "to": "decide", "label": "hard PASS", "variant": "emphasis", "role": "main" },
+    { "id": "e_accept", "from": "decide", "to": "approve", "label": "accept by name", "role": "main" },
+    { "id": "e_approval", "from": "approve", "to": "deliver", "label": "named approval", "variant": "security", "role": "main" },
+    { "id": "e_hardfail", "from": "validate", "to": "repair", "label": "hard FAIL", "variant": "security", "role": "error" },
+    { "id": "e_retry", "from": "repair", "to": "generate", "label": "retry within budget", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Hard vs soft", "items": ["validate + secret_scan are hard gates — they must PASS to deliver", "tflint / checkov / fmt are soft — style and security choices you accept by name or fix", "A scanner that did not run is NOT_RUN, never PASS"] },
+    { "dot": "rose", "title": "Bounded, never silent", "items": ["Repair spends a fixed budget (2 attempts), then stops and asks a person", "Soft findings are accepted by name with a reason — recorded, not silent", "Delivery needs a named human approval; the PR body is the decision ledger"] },
+    { "dot": "emerald", "title": "Resume any time", "items": ["The frozen build-sheet hash and work/ provenance survive in the mission folder", "pickup returns one packet: state, evidence, gate, and the exact next step", "Change a decision and re-confirm to freeze a new revision"] }
+  ]
+}

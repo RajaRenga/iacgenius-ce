@@ -9,8 +9,28 @@ to review. It runs on [Hermes Agent](https://github.com/NousResearch/hermes-agen
 It never applies anything. You remain the one who runs `terraform apply`, somewhere else, after you have
 read the diff. IaCGenius holds no cloud credentials and does not need them to validate.
 
-New to it? Follow the [user workflow](docs/WORKFLOW.md) — from reading the board, to investigating a
-mission, to accepting findings and finishing with a PR or a download.
+**New to it? Start with the [getting-started guide](docs/GETTING-STARTED.md)** — a screenshot-driven
+walkthrough of a real mission: set it up, ask for something, watch it validate, read the board, make the
+decisions, and finish with a PR or a download. The shorter [user workflow](docs/WORKFLOW.md) covers the
+same path as a quick reference.
+
+## See it in action
+
+You describe the infrastructure; IaCGenius writes it, runs the real validators, and shows you the
+evidence on a board. The model proposes — a deterministic, credential-less desk decides what is true:
+
+![IaCGenius CE architecture](docs/media/diagrams/ce-architecture.png)
+
+Each mission card shows the tool and version behind every check, the repair budget, exactly what is still
+open, and a plain-language next step. A card can say `failed` while the code is perfectly valid — that
+means a decision is pending, not that the Terraform is wrong:
+
+![The IaC mission board](docs/media/screens/guide-01-board.png)
+
+Interactive diagrams (zoom, trace the flow, read the source behind each box):
+[architecture](docs/media/diagrams/ce-architecture.html) ·
+[mission journey](docs/media/diagrams/ce-workflow.html) ·
+[where your work lives](docs/media/diagrams/ce-dataflow.html).
 
 ## How it works
 

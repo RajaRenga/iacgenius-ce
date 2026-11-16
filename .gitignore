@@ -17,3 +17,6 @@ Thumbs.db
 iacg-data/
 profiles/*/plugins/*/local.json
 profiles/*/dashboard-plugins/*/local.json
+# archify working files + diagram gate receipts (diagram sources: docs/media/diagrams/*.json)
+.archify/
+docs/media/diagrams/*.*.json

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "IaCGenius CE — where your work lives, and how it survives",
+    "locale": "en",
+    "output": "docs/media/diagrams/ce-dataflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/RajaRenga/iacgenius-ce.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "af56febda3c6061a7381b4b4129fa1753eed15b8"
+    }
+  },
+  "stages": [
+    { "label": "Produce" },
+    { "label": "One folder" },
+    { "label": "Keep & carry" },
+    { "label": "Next step" }
+  ],
+  "nodes": [
+    { "id": "stack", "type": "backend", "label": "Generated stack", "sublabel": ".tf · validated", "stage": 0, "row": 0,
+      "sources": [{ "path": "iacg_desk/workspace.py", "line": 103, "label": "writes the tree" }] },
+    { "id": "prov", "type": "database", "label": "Provenance", "sublabel": "ledger · evidence · acceptances", "stage": 0, "row": 2,
+      "sources": [{ "path": "iacg_desk/workspace.py", "line": 103, "label": "sync work/" }, { "path": "iacg_desk/ledger.py", "line": 119, "label": "ledger packet" }] },
+    { "id": "folder", "type": "database", "label": "Mission folder", "sublabel": "filesystem = truth", "stage": 1, "row": 1, "tag": "one session",
+      "sources": [{ "path": "iacg_desk/workspace.py", "line": 29, "label": "mission tree" }] },
+    { "id": "s3", "type": "cloud", "label": "S3 mirror", "sublabel": "optional · 5 min", "stage": 2, "row": 0,
+      "sources": [{ "path": "deploy/aws-single/host.py", "line": 297, "label": "incremental sync" }, { "path": "deploy/aws-single/host.py", "line": 56, "label": "restore on boot" }] },
+    { "id": "zip", "type": "cloud", "label": "ZIP package", "sublabel": "whole folder", "stage": 2, "row": 2,
+      "sources": [{ "path": "iacg_desk/workspace.py", "line": 129, "label": "package zip" }] },
+    { "id": "resume", "type": "backend", "label": "Pickup packet", "sublabel": "reads the folder on disk", "stage": 3, "row": 0,
+      "sources": [{ "path": "iacg_desk/pickup.py", "line": 15, "label": "one-call pickup" }] },
+    { "id": "apply", "type": "external", "label": "You apply", "sublabel": "elsewhere · by hand", "stage": 3, "row": 2, "tag": "never auto",
+      "sources": [{ "path": "profiles/iacgenius/plugins/iacg-desk/__init__.py", "line": 301, "label": "refuses apply" }] }
+  ],
+  "flows": [
+    { "id": "f_stack", "from": "stack", "to": "folder", "label": ".tf at root", "classification": "deliverable code", "variant": "emphasis" },
+    { "id": "f_prov", "from": "prov", "to": "folder", "label": "work/ record", "classification": "who decided what", "variant": "emphasis" },
+    { "id": "f_sync", "from": "folder", "to": "s3", "label": "sync changed files", "classification": "incremental mirror", "variant": "dashed" },
+    { "id": "f_zip", "from": "folder", "to": "zip", "label": "package", "classification": "single download", "variant": "default" },
+    { "id": "f_pickup", "from": "folder", "to": "resume", "label": "pickup", "classification": "one call", "variant": "default", "route": "top-channel" },
+    { "id": "f_download", "from": "zip", "to": "apply", "label": "download + apply", "classification": "human applies", "variant": "security" },
+    { "id": "f_finish", "from": "resume", "to": "apply", "label": "approve + deliver", "classification": "named approval", "variant": "default" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "One session, one folder", "items": ["The .tf code sits at the folder root; work/ keeps the ledger, freeze hash, evidence and named acceptances", "The filesystem is the source of truth — a lost folder is forgotten, not a stale database row", "package zips the whole folder (minus provider binaries) for a single download"] },
+    { "dot": "cyan", "title": "Survives an instance change", "items": ["Optional s3_sync mirrors only changed files to S3 every 5 minutes", "On boot, host.py syncs the work, desk state and profile back down", "A replacement Spot picks up where the last one left off"] },
+    { "dot": "rose", "title": "You stay in control", "items": ["pickup returns one packet — state, evidence, gate, next step — so resuming never hunts", "IaCGenius never applies; you run terraform apply elsewhere after reading the diff", "Delivery is a named human approval, then a PR (read back) or a ZIP"] }
+  ]
+}

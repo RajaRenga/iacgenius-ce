@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IaCGenius CE — product tour</title>
+</head>
+<body>
+
+<style>
+:root{
+  --bg:#0a0f0d; --bg2:#0f1714; --panel:#121c18; --panel2:#16221d;
+  --line:#22322b; --line2:#2c4038;
+  --ink:#e8f2ee; --mut:#9db3ab; --dim:#6f857d;
+  --teal:#2dd4bf; --teal2:#14b8a6; --teal-d:#0d9488;
+  --emerald:#34d399; --amber:#fbbf24; --rose:#fb7185; --violet:#a78bfa; --cyan:#22d3ee;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#123128 0%,transparent 60%),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+a{color:var(--teal);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;height:auto;display:block}
+code,pre{font-family:var(--mono)}
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(10,15,13,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:18px;height:58px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em}
+.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--teal);box-shadow:0 0 14px var(--teal)}
+.nav .links{display:flex;gap:16px;margin-left:auto;flex-wrap:wrap}
+.nav .links a{color:var(--mut);font-size:13.5px;font-weight:500}
+.nav .links a:hover{color:var(--teal);text-decoration:none}
+/* hero */
+.hero{padding:46px 0 30px}
+.hero img{border-radius:16px;border:1px solid var(--line2);box-shadow:0 24px 60px -30px rgba(0,0,0,.8)}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);border:1px solid var(--line2);background:var(--panel);padding:6px 12px;border-radius:999px;margin:26px 0 14px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:0 0 14px;letter-spacing:-.02em}
+h1 .grad{background:linear-gradient(90deg,var(--teal),var(--emerald));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(16px,2.4vw,19px);color:var(--mut);max-width:760px;margin:0 0 20px}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 8px}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel)}
+.badge b{color:var(--teal)}
+.badge.no b{color:var(--rose)}
+/* sections */
+section{padding:40px 0;border-top:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin:0 0 8px}
+h2{font-size:clamp(23px,3.4vw,30px);margin:0 0 10px;letter-spacing:-.01em}
+h3{font-size:18px;margin:26px 0 8px}
+.sub{color:var(--mut);max-width:780px;margin:0 0 22px}
+/* value cards */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:20px}
+.card .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;margin-bottom:12px;background:var(--bg2);border:1px solid var(--line2)}
+.card h3{margin:0 0 6px;font-size:16.5px}
+.card p{margin:0;color:var(--mut);font-size:14.5px}
+.card.t .ic{color:var(--teal)} .card.e .ic{color:var(--emerald)} .card.v .ic{color:var(--violet)}
+/* figure / diagram */
+.figure{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:14px;margin:8px 0 6px;overflow:hidden}
+.figure .scroll{overflow-x:auto;border-radius:10px}
+.figure img{border-radius:10px;margin:0 auto}
+figcaption{color:var(--dim);font-size:13px;text-align:center;margin:12px 4px 2px}
+.dlink{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:14px 0 0;font-size:13.5px}
+.dlink a{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--panel);padding:7px 13px;border-radius:9px;color:var(--mut)}
+.dlink a:hover{color:var(--teal);border-color:var(--teal-d);text-decoration:none}
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.shot{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.shot .scroll{overflow-x:auto}
+.shot img{border-bottom:1px solid var(--line)}
+.shot .cap{padding:13px 16px}
+.shot .cap b{display:block;font-size:14.5px;margin-bottom:3px}
+.shot .cap span{color:var(--mut);font-size:13px}
+.shot.wide{grid-column:1/-1}
+/* evidence */
+.ev{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 4px}
+.ev th,.ev td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+.ev th{color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.ev td.mono{font-family:var(--mono);font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.pass{color:var(--emerald);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3)}
+.pill.fail{color:var(--rose);background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.3)}
+.pill.soft{color:var(--amber);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3)}
+.note{border-left:3px solid var(--teal);background:var(--panel);padding:14px 18px;border-radius:0 10px 10px 0;color:var(--mut);font-size:14.5px;margin:18px 0}
+.note b{color:var(--ink)}
+.note.warn{border-left-color:var(--amber)}
+pre{background:#0b1310;border:1px solid var(--line2);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.55;color:#cfe6dd;margin:10px 0}
+pre .c{color:var(--dim)} pre .k{color:var(--teal)} pre .s{color:var(--emerald)}
+.findings{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.finding{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:13.5px}
+.finding .id{font-family:var(--mono);color:var(--amber);font-weight:700;white-space:nowrap}
+.finding .msg{color:var(--mut)}
+/* steps */
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:14px;margin:8px 0}
+.step{display:flex;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.step .n{counter-increment:s;flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--teal-d);color:#04211c;font-weight:800;display:grid;place-items:center;font-size:14px}
+.step .n::before{content:counter(s)}
+.step .b b{display:block;margin-bottom:3px}
+.step .b span{color:var(--mut);font-size:14px}
+.step .b code{background:var(--bg2);border:1px solid var(--line2);padding:1px 6px;border-radius:6px;font-size:12.5px;color:var(--teal)}
+/* footer */
+.foot{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--dim);font-size:13.5px}
+.foot .never{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.foot .never span{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(251,113,133,.3);background:rgba(251,113,133,.07);color:#f3b6bf;padding:7px 13px;border-radius:9px;font-size:13px}
+.cta{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(90deg,var(--teal2),var(--teal-d));color:#04211c;font-weight:700;padding:12px 22px;border-radius:11px;margin:6px 0 0}
+.cta:hover{text-decoration:none;filter:brightness(1.08)}
+@media(max-width:760px){.grid3{grid-template-columns:1fr}.gallery{grid-template-columns:1fr}.nav .links{display:none}}
+</style>
+<nav class="nav"><div class="wrap">
+  <div class="brand"><span class="dot"></span>IaCGenius <span style="color:var(--dim);font-weight:500">CE</span></div>
+  <div class="links">
+    <a href="#what">What it does</a><a href="#arch">Architecture</a><a href="#journey">The journey</a>
+    <a href="#live">See it live</a><a href="#evidence">Real evidence</a><a href="#durable">Durability</a><a href="#start">Get started</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <img src="marketplace-banner.png" alt="IaCGenius Community Edition">
+  <div class="kicker">Community Edition · on Hermes Agent</div>
+  <h1>Describe your infrastructure.<br><span class="grad">Get validated Terraform and a PR to review.</span></h1>
+  <p class="lede">IaCGenius writes the Terraform (or OpenTofu), runs the real validators over it, fixes what it can within a fixed budget, and hands you a pull request whose body is the decision ledger. Everything below is captured from a live installation — not a mockup.</p>
+  <div class="badges">
+    <span class="badge no"><b>✕</b> Never applies</span>
+    <span class="badge no"><b>✕</b> No cloud credentials</span>
+    <span class="badge"><b>✓</b> Real validators decide truth</span>
+    <span class="badge"><b>✓</b> You own every decision</span>
+  </div>
+</div></header>
+
+<section id="what"><div class="wrap">
+  <p class="eyebrow">The idea</p>
+  <h2>A generator you can actually trust</h2>
+  <p class="sub">Most code generators ask you to trust the model. IaCGenius splits the work so you don't have to: the model proposes, a deterministic desk proves, and you decide.</p>
+  <div class="grid3">
+    <div class="card t"><div class="ic">⚖️</div><h3>The model proposes; the desk decides</h3><p>A small credential-less service owns the decision ledger, runs <code>terraform validate</code>, tflint, checkov and a secret scan, and keeps the evidence. No model output is trusted as a validation result.</p></div>
+    <div class="card e"><div class="ic">🚦</div><h3>Correctness blocks; security is your call</h3><p>validate + secret scan are hard gates — they must pass. tflint / checkov / fmt are soft choices you accept by name or fix. A scanner that didn't run is <code>NOT_RUN</code>, never <code>PASS</code>.</p></div>
+    <div class="card v"><div class="ic">📁</div><h3>Your work is a folder</h3><p>One mission, one folder: the <code>.tf</code> code plus a <code>work/</code> record of what was decided and who decided it. The filesystem is the source of truth; a lost folder is forgotten, not a stale row.</p></div>
+  </div>
+</div></section>
+
+<section id="arch"><div class="wrap">
+  <p class="eyebrow">How it is built</p>
+  <h2>The architecture</h2>
+  <p class="sub">A pinned Hermes container holds the agent, its skills and the desk plugin — no cloud credentials, never applies. The deterministic desk runs as a credential-less host service. External capability comes from the Hermes ecosystem's MCPs, not re-implemented code.</p>
+  <figure class="figure"><div class="scroll"><img src="diagrams/ce-architecture.png" alt="IaCGenius CE architecture"></div>
+    <figcaption>Every box links to the source that proves it. Two trust boundaries: the container (no creds) and the host desk (deterministic truth).</figcaption></figure>
+  <div class="dlink"><a href="diagrams/ce-architecture.html">↗ Open the interactive architecture</a></div>
+</div></section>
+
+<section id="journey"><div class="wrap">
+  <p class="eyebrow">How a mission runs</p>
+  <h2>From plain English to a reviewable PR</h2>
+  <p class="sub">Intake asks only the costly or irreversible questions, freezes the scope into one hash, generates schema-grounded code, then validates. Hard failures trigger a bounded repair loop; soft findings come to you. Delivery needs a named human approval.</p>
+  <figure class="figure"><div class="scroll"><img src="diagrams/ce-workflow.png" alt="The mission journey workflow"></div>
+    <figcaption>The happy path runs across the top; the bounded repair loop and the human decisions branch off the validate gate.</figcaption></figure>
+  <div class="dlink"><a href="diagrams/ce-workflow.html">↗ Open the interactive journey</a></div>
+</div></section>
+
+<section id="live"><div class="wrap">
+  <p class="eyebrow">Captured from a running installation</p>
+  <h2>See it live</h2>
+  <p class="sub">The dashboard has three surfaces: <b>Chat</b> to talk to IaCGenius, the <b>IaC Board</b> to watch missions, and <b>Files</b> to read and download the code. These are real screenshots.</p>
+  <div class="gallery">
+    <figure class="shot wide"><div class="scroll"><img src="screens/guide-01-board.png" alt="The mission board" loading="lazy"></div><figcaption class="cap"><b>The mission board</b><span>Evidence chips with tool + version, repair budget, exactly what is open, and a plain-language next step. “failed” here means a decision is pending — the code is valid.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-02-chat.png" alt="Ask in plain English" loading="lazy"></div><figcaption class="cap"><b>Ask in plain English</b><span>The pinned Hermes agent, ready with 16 skills and the ecosystem MCP loaded. Type the request; intake settles the rest.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-05-files-zip.png" alt="One folder, one ZIP" loading="lazy"></div><figcaption class="cap"><b>One folder, one ZIP</b><span>The mission folder and its single ZIP download in the Files tab — explore it offline.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-06-mission-folder.png" alt="Code + provenance, separated" loading="lazy"></div><figcaption class="cap"><b>Code + provenance, separated</b><span>The .tf stack at the root; a work/ folder keeps what was finalized and who did what.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-07-work-provenance.png" alt="The work/ record" loading="lazy"></div><figcaption class="cap"><b>The work/ record</b><span>ledger · build-sheet · evidence · acceptances · repairs · manifest — the durable handoff.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-03-skills.png" alt="A registry of skills" loading="lazy"></div><figcaption class="cap"><b>A registry of skills</b><span>Intake, generate, pickup, risk, status, wrapup plus cloud and IaC craft skills — each inspectable.</span></figcaption></figure>
+    <figure class="shot"><div class="scroll"><img src="screens/guide-04-mcp-ecosystem.png" alt="Consume the ecosystem" loading="lazy"></div><figcaption class="cap"><b>Consume the ecosystem</b><span>The connected terraform-registry MCP, and a catalog of Nous-approved servers one click away.</span></figcaption></figure>
+  </div>
+</div></section>
+
+<section id="evidence"><div class="wrap">
+  <p class="eyebrow">A real mission, end to end</p>
+  <h2>The evidence, not the promise</h2>
+  <p class="sub">Mission <code>m_61a2d472f3ec</code> — “a private RDS PostgreSQL database with customer-managed encryption for prod.” Here is exactly what the desk recorded.</p>
+  <div style="overflow-x:auto"><table class="ev">
+    <thead><tr><th>Check</th><th>Tool · version</th><th>Result</th><th>Kind</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">validate</td><td class="mono">terraform 1.15.9</td><td><span class="pill pass">PASS</span></td><td>hard gate</td></tr>
+      <tr><td class="mono">secret_scan</td><td class="mono">iacg-secret-scan 0.1.0</td><td><span class="pill pass">PASS</span></td><td>hard gate</td></tr>
+      <tr><td class="mono">tflint</td><td class="mono">tflint 0.64.0</td><td><span class="pill pass">PASS</span></td><td>soft</td></tr>
+      <tr><td class="mono">fmt</td><td class="mono">terraform 1.15.9</td><td><span class="pill pass">PASS</span></td><td>soft</td></tr>
+      <tr><td class="mono">checkov</td><td class="mono">checkov 3.3.16</td><td><span class="pill fail">FAIL · 5</span></td><td>soft · your call</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>The code is valid.</b> Both hard gates pass. The checkov FAIL is five hardening <i>choices</i> — not bugs. Each is named, and each is yours to accept by name (with a reason) or fix. Nothing is silently passed.</div>
+  <h3>The five soft findings, by name</h3>
+  <div class="findings">
+    <div class="finding"><span class="id">CKV_AWS_338</span><span class="msg">CloudWatch log group should retain logs for at least 1 year</span></div>
+    <div class="finding"><span class="id">CKV_AWS_157</span><span class="msg">RDS instance should have Multi-AZ enabled</span></div>
+    <div class="finding"><span class="id">CKV2_AWS_30</span><span class="msg">Postgres RDS should have Query Logging enabled</span></div>
+    <div class="finding"><span class="id">CKV2_AWS_11</span><span class="msg">VPC flow logging should be enabled</span></div>
+    <div class="finding"><span class="id">CKV2_AWS_12</span><span class="msg">Default security group should restrict all traffic</span></div>
+  </div>
+  <div class="note warn">The settled ledger chose <b>single_zone</b> availability, so Multi-AZ (<code>CKV_AWS_157</code>) is a human accept-or-revise decision — the generated code even says so in a comment, rather than silently flipping it.</div>
+  <h3>Conventions remembered, then reused</h3>
+  <p class="sub">The owner tag <code>platform-team</code> was declared once as a knowledge card. The generated stack carries it straight into the tags — no re-asking:</p>
+  <pre><span class="k">locals</span> {
+  common_tags = {
+    Project     = <span class="s">"iacg-rds-private"</span>
+    Environment = <span class="s">"prod"</span>
+    ManagedBy   = <span class="s">"iacg-ce"</span>
+    Owner       = <span class="s">"platform-team"</span>   <span class="c"># &lt;- resolved from a knowledge card</span>
+  }
+}</pre>
+  <h3>And the code itself is sound</h3>
+  <p class="sub">A customer-managed KMS key with a scoped policy (RDS and CloudWatch Logs get exactly the crypto actions they need), private subnets, a VPC-only security group, enhanced monitoring, deletion protection, and a managed master password — never a literal secret:</p>
+  <pre><span class="k">resource</span> <span class="s">"aws_db_instance"</span> <span class="s">"main"</span> {
+  engine            = <span class="s">"postgres"</span>
+  storage_encrypted = <span class="k">true</span>
+  kms_key_id        = aws_kms_key.rds.arn
+  manage_master_user_password   = <span class="k">true</span>   <span class="c"># secret managed by AWS, not written here</span>
+  publicly_accessible           = <span class="k">false</span>
+  deletion_protection           = <span class="k">true</span>
+  multi_az                      = <span class="k">false</span>  <span class="c"># settled ledger: single_zone (CKV_AWS_157 is your call)</span>
+}</pre>
+</div></section>
+
+<section id="durable"><div class="wrap">
+  <p class="eyebrow">Kept safe, survives change</p>
+  <h2>Where your work lives</h2>
+  <p class="sub">The folder is the truth. An optional incremental S3 sync mirrors only changed files every 5 minutes and restores on boot — so a replacement instance picks up where the last one left off. <code>pickup</code> returns one packet to resume; <code>package</code> zips the folder to carry it.</p>
+  <figure class="figure"><div class="scroll"><img src="diagrams/ce-dataflow.png" alt="Where your work lives and how it survives"></div>
+    <figcaption>Produce → one folder → keep &amp; carry → next step. IaCGenius never applies; you run terraform apply elsewhere.</figcaption></figure>
+  <div class="dlink"><a href="diagrams/ce-dataflow.html">↗ Open the interactive data flow</a></div>
+</div></section>
+
+<section id="start"><div class="wrap">
+  <p class="eyebrow">Run your own</p>
+  <h2>Get started in one instance</h2>
+  <p class="sub">One EC2 instance in an Auto Scaling group, a private S3 bucket, SSM-only access. Prefer a persistent (on-demand) instance; enable the optional S3 sync if you run on Spot.</p>
+  <div class="steps">
+    <div class="step"><div class="n"></div><div class="b"><b>Deploy</b><span>Set <code>local.tfvars</code> (account, subnet, source zip, model key in Secrets Manager), then <code>terraform apply</code> in <code>deploy/aws-single</code>. First boot pulls the pinned Hermes image and installs the toolchain.</span></div></div>
+    <div class="step"><div class="n"></div><div class="b"><b>Open the dashboard</b><span>SSM port-forward to <code>127.0.0.1:9126</code>; the login is in <code>/data/hermes/iacgenius-login.json</code>. Ask IaCGenius to onboard once to warm the provider cache.</span></div></div>
+    <div class="step"><div class="n"></div><div class="b"><b>Ask for something</b><span>“A private RDS PostgreSQL database with customer-managed encryption for prod.” Answer the few costly questions; the rest resolves from your conventions.</span></div></div>
+    <div class="step"><div class="n"></div><div class="b"><b>Read the board, decide, finish</b><span>Accept soft findings by name, approve delivery, then open a PR (read back) or <code>package</code> a ZIP. Apply it yourself, elsewhere.</span></div></div>
+  </div>
+  <a class="cta" href="../GETTING-STARTED.md">Read the full getting-started guide →</a>
+</div></section>
+
+<footer class="foot"><div class="wrap">
+  <div class="never">
+    <span>✕ Never runs terraform apply / tofu apply</span>
+    <span>✕ Never calls a cloud write API</span>
+    <span>✕ Never uses cloud credentials</span>
+    <span>✕ Never claims a scan passed when it didn't run</span>
+  </div>
+  <p>Early build (0.1.0) · Apache-2.0 · runs on <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> · source at <a href="https://github.com/RajaRenga/iacgenius-ce">RajaRenga/iacgenius-ce</a>.</p>
+  <p style="color:var(--dim)">Screenshots and evidence captured from a live CE installation. Diagrams are source-cited and interactive.</p>
+</div></footer>
+
+</body>
+</html>

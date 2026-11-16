@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "IaCGenius CE — how it is built",
+    "locale": "en",
+    "output": "docs/media/diagrams/ce-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/RajaRenga/iacgenius-ce.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "af56febda3c6061a7381b4b4129fa1753eed15b8"
+    }
+  },
+  "components": [
+    { "id": "you", "type": "external", "label": "You", "sublabel": "browser · SSM tunnel", "pos": [40, 320], "size": [110, 60],
+      "sources": [{ "path": "deploy/aws-single/README.md", "label": "SSM dashboard access" }] },
+    { "id": "dashboard", "type": "frontend", "label": "Hermes Dashboard", "sublabel": "Chat · Files · IaC Board", "pos": [260, 320], "size": [140, 60],
+      "sources": [{ "path": "profiles/iacgenius/dashboard-plugins/iacg-board/dashboard/plugin_api.py", "line": 91, "label": "board page" }, { "path": "iacg_desk/board.py", "line": 31, "label": "snapshot" }] },
+    { "id": "hermes", "type": "backend", "label": "Hermes Agent", "sublabel": "pinned v0.23.1 · LLM seam", "pos": [510, 320], "size": [150, 64],
+      "sources": [{ "path": "deploy/aws-single/host.py", "line": 134, "label": "hermes env" }, { "path": "profiles/iacgenius/config.yaml", "label": "profile + model" }] },
+    { "id": "plugin", "type": "security", "label": "iacg-desk plugin", "sublabel": "socket client · refuses apply", "pos": [770, 320], "size": [140, 64],
+      "sources": [{ "path": "profiles/iacgenius/plugins/iacg-desk/__init__.py", "line": 38, "label": "socket call" }, { "path": "profiles/iacgenius/plugins/iacg-desk/__init__.py", "line": 301, "label": "refuses apply" }] },
+    { "id": "desk", "type": "backend", "label": "Deterministic desk", "sublabel": "ledger · gates · repair · no creds", "pos": [1020, 320], "size": [160, 70],
+      "sources": [{ "path": "iacg_desk/server.py", "line": 57, "label": "socket serve" }, { "path": "iacg_desk/cli.py", "line": 119, "label": "CLI dispatch" }] },
+    { "id": "workspace", "type": "database", "label": "Mission folder", "sublabel": "filesystem = truth · .tf + work/", "pos": [1290, 320], "size": [150, 64],
+      "sources": [{ "path": "iacg_desk/workspace.py", "line": 103, "label": "sync work/" }, { "path": "iacg_desk/workspace.py", "line": 129, "label": "package zip" }] },
+    { "id": "skills", "type": "backend", "label": "Skills (16)", "sublabel": "intake · generate · pickup · risk", "pos": [510, 140], "size": [150, 58],
+      "sources": [{ "path": "profiles/iacgenius/skills/iacg-generate/SKILL.md", "label": "generation contract" }, { "path": "profiles/iacgenius/skills/iacg-intake/SKILL.md", "label": "intake" }] },
+    { "id": "validators", "type": "cloud", "label": "Toolchain", "sublabel": "terraform · tflint · checkov · secrets", "pos": [1020, 140], "size": [160, 58],
+      "sources": [{ "path": "iacg_desk/validate.py", "line": 128, "label": "run toolchain" }, { "path": "iacg_desk/gates.py", "line": 8, "end_line": 10, "label": "hard / soft" }] },
+    { "id": "s3", "type": "cloud", "label": "S3 mirror", "sublabel": "optional · sync 5 min", "pos": [1290, 140], "size": [150, 58],
+      "sources": [{ "path": "deploy/aws-single/host.py", "line": 297, "label": "incremental sync" }, { "path": "deploy/aws-single/host.py", "line": 52, "label": "enable + restore" }] },
+    { "id": "mcps", "type": "external", "label": "Ecosystem MCPs", "sublabel": "terraform-registry · aws-knowledge", "pos": [510, 500], "size": [150, 58],
+      "sources": [{ "path": "profiles/iacgenius/skills/iacg-generate/SKILL.md", "label": "read-only MCP guidance" }] },
+    { "id": "knowledge", "type": "database", "label": "Knowledge", "sublabel": "OKF cards · conventions", "pos": [770, 500], "size": [140, 58],
+      "sources": [{ "path": "iacg_desk/knowledge.py", "line": 84, "label": "remember OKF" }, { "path": "iacg_desk/knowledge.py", "line": 22, "label": "profile keys" }] },
+    { "id": "pickup", "type": "backend", "label": "Pickup packet", "sublabel": "one call · resume / finish", "pos": [1020, 500], "size": [160, 58],
+      "sources": [{ "path": "iacg_desk/pickup.py", "line": 15, "label": "pickup packet" }] },
+    { "id": "deliver", "type": "cloud", "label": "GitHub delivery", "sublabel": "PR · ledger body · read-back", "pos": [1290, 500], "size": [150, 58],
+      "sources": [{ "path": "iacg_desk/deliver.py", "line": 45, "label": "PR + read-back" }] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Hermes container — no cloud credentials, never applies", "wraps": ["hermes", "skills", "plugin"], "pad": 16 },
+    { "kind": "region", "label": "Host service — credential-less, deterministic truth", "wraps": ["desk", "validators", "pickup"], "pad": 16 }
+  ],
+  "connections": [
+    { "from": "you", "to": "dashboard", "label": "SSM tunnel", "variant": "emphasis" },
+    { "from": "dashboard", "to": "hermes", "label": "chat", "variant": "emphasis" },
+    { "from": "hermes", "to": "plugin", "label": "iacg_mission", "variant": "emphasis" },
+    { "from": "plugin", "to": "desk", "label": "Unix socket", "variant": "emphasis" },
+    { "from": "desk", "to": "workspace", "label": ".tf + work/", "variant": "emphasis" },
+    { "from": "hermes", "to": "skills", "label": "skills contract" },
+    { "from": "hermes", "to": "mcps", "label": "read-only docs", "variant": "dashed" },
+    { "from": "desk", "to": "validators", "label": "run toolchain" },
+    { "from": "desk", "to": "knowledge", "label": "remember / resolve" },
+    { "from": "desk", "to": "pickup", "label": "one-call resume" },
+    { "from": "desk", "to": "deliver", "label": "PR + read-back", "variant": "security" },
+    { "from": "workspace", "to": "s3", "label": "sync · restore", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "The split that matters", "items": ["The LLM proposes code; a deterministic, credential-less desk decides what is true", "validate + secret_scan are hard gates; tflint / checkov / fmt are soft, human decisions", "A scanner that did not run is NOT_RUN, never PASS"] },
+    { "dot": "emerald", "title": "Filesystem is the source of truth", "items": ["A mission is its folder: .tf code plus work/ provenance (ledger, freeze hash, evidence, acceptances)", "A lost folder is forgotten, not kept as a stale database record", "Optional S3 sync mirrors only changed files every 5 min and restores on boot"] },
+    { "dot": "violet", "title": "Humans own the decisions", "items": ["Costly or irreversible choices are asked, then frozen into one build-sheet hash", "Soft security findings are accepted by name with a reason, never silently passed", "Delivery needs a named approval; the PR body is the ledger and the commit is read back"] },
+    { "dot": "amber", "title": "Consume the ecosystem, do not rebuild", "items": ["Read-only guidance comes from Hermes MCPs (terraform-registry, aws-knowledge, DeepWiki)", "Generation checks every argument against the real provider schema (OKF cache)", "Remembered conventions (region, owner tag) resolve from knowledge cards across missions"] }
+  ]
+}
