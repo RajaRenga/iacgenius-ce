@@ -113,6 +113,11 @@ border:1px solid var(--line);background:#fbfaf7;max-width:100%}
 .owner{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);
 font-size:12.5px;color:var(--muted)}
 .owner b{color:var(--ink)}
+.chat-btn{margin-left:auto;flex:0 0 auto;cursor:pointer;font:600 12px system-ui,sans-serif;color:#fff;
+background:var(--teal);border:1px solid #0b5d57;border-radius:8px;padding:6px 12px;transition:background .15s}
+.chat-btn:hover{background:#0b5d57}
+.chat-btn:active{transform:translateY(1px)}
+.chat-note{font-size:11.5px;color:var(--muted);margin:6px auto 0;max-width:1100px;text-align:right}
 .empty{max-width:560px;margin:8vh auto;text-align:center;background:var(--surface);border:1px solid var(--line);
 border-radius:16px;padding:40px 28px;box-shadow:0 1px 2px rgba(20,20,20,.05)}
 .empty h2{margin:0 0 8px;font-size:18px}
@@ -184,6 +189,20 @@ def _guidance(m) -> str:
             f'<p style="margin:0;font-size:12.5px;color:#3f3f46">{html.escape(step)}</p></div>')
 
 
+def _chat_prompt(m) -> str:
+    """A ready-to-paste prompt that seeds a chat session with this mission's full context."""
+    ev = ", ".join(f"{e['check']}={e['status']} ({e['tool']} {e['version']})" for e in m["evidence"]) or "no evidence yet"
+    reasons = "; ".join(m["gate_reasons"]) or "none"
+    return (
+        f'Continue IaCGenius mission {m["id"]} "{m["title"]}". '
+        f'Target {m["provider"]}/{m["iac_tool"]}, tier {m["build_tier"]}; state {m["state"]}, '
+        f'disposition {m["disposition"]}. Evidence: {ev}. Open items: {reasons}. '
+        f'Next owner: {m["next_owner"]}. '
+        f'Show me the status and the generated code, explain what I need to decide, and help me finish '
+        f'(accept soft findings by name, approve delivery, then deliver a PR or package a ZIP).'
+    )
+
+
 def _card(m) -> str:
     badges = (f'<span class="badge {_state_class(m["state"])}">{html.escape(m["state"])}</span>'
               f'<span class="badge {_disp_class(m["disposition"])}">{html.escape(m["disposition"])}</span>')
@@ -214,8 +233,35 @@ def _card(m) -> str:
         f'{questions}{acceptances}'
         '</div>'
         f'{_guidance(m)}'
-        f'<div class="owner">Next owner:&nbsp;<b>{html.escape(m["next_owner"])}</b></div>'
+        f'<div class="owner"><span>Next owner:&nbsp;<b>{html.escape(m["next_owner"])}</b></span>'
+        f'<button class="chat-btn" type="button" data-mid="{html.escape(m["id"])}" '
+        f'data-prompt="{html.escape(_chat_prompt(m), quote=True)}" '
+        f'title="Copy this mission\'s context and open a chat session">Continue in chat ↗</button></div>'
         '</article>')
+
+
+_CHAT_SCRIPT = """
+(function(){
+  function copy(text){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    }catch(e){ return false; }
+  }
+  document.addEventListener('click',function(ev){
+    var t=ev.target; var btn=t && t.closest ? t.closest('.chat-btn') : null;
+    if(!btn) return;
+    var prompt=btn.getAttribute('data-prompt')||'';
+    var mid=btn.getAttribute('data-mid')||'';
+    var ok=copy(prompt);
+    try{ window.parent.postMessage({type:'iacg-open-chat', mid:mid, prompt:prompt, copied:ok}, '*'); }catch(e){}
+    var old=btn.textContent; btn.textContent= ok ? 'Copied \\u2014 opening chat\\u2026' : 'Opening chat\\u2026';
+    setTimeout(function(){ btn.textContent=old; }, 2500);
+  });
+})();
+"""
 
 
 def render_html(snap: dict) -> str:
@@ -235,7 +281,8 @@ def render_html(snap: dict) -> str:
             "<header><div><h1>IaC Genius mission board</h1>"
             f"<div class=\"sub\">Snapshot {html.escape(str(snap['generated_at']))} — written by the desk</div></div>"
             f"{legend}</header>"
-            f'<main class="scroll">{cards}</main></body></html>')
+            f'<main class="scroll">{cards}</main>'
+            f'<script>{_CHAT_SCRIPT}</script></body></html>')
 
 
 def write(store) -> dict:

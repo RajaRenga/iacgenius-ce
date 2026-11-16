@@ -8,6 +8,7 @@
   var React = SDK.React;
   var h = React.createElement;
   var useState = SDK.hooks.useState, useEffect = SDK.hooks.useEffect, useRef = SDK.hooks.useRef;
+  var useToast = SDK.hooks.useToast;
   var API = "/api/plugins/iacg-board";
 
   function get(path) { return SDK.fetchJSON(API + path); }
@@ -25,6 +26,26 @@
     var v = useState(0), version = v[0], setVersion = v[1];
     var last = useRef(null);
     var pageRef = useRef(null);
+    var tt = useToast(), showToast = tt.showToast, toast = tt.toast;
+    var toastRef = useRef(showToast); toastRef.current = showToast;
+
+    // A board card's "Continue in chat" button copies the mission context, then asks us to open chat.
+    // Core chat has no plugin seed hook, so the context rides the clipboard: the user pastes it.
+    useEffect(function () {
+      function onMsg(ev) {
+        var d = ev.data;
+        if (!d || d.type !== "iacg-open-chat") return;
+        var profile = new URLSearchParams(window.location.search).get("profile") || "iacgenius";
+        try {
+          toastRef.current(d.copied
+            ? "Mission context copied — paste it in chat (Ctrl+V) and press Enter"
+            : "Opening chat for " + d.mid, "success");
+        } catch (e) { /* toast optional */ }
+        setTimeout(function () { window.location.assign("/chat?profile=" + encodeURIComponent(profile)); }, 900);
+      }
+      window.addEventListener("message", onMsg);
+      return function () { window.removeEventListener("message", onMsg); };
+    }, []);
 
     // Fit the pane to the viewport: the dashboard route wrapper is auto-height, so size from the
     // pane's actual top edge down to the bottom and re-fit on resize.
@@ -90,7 +111,8 @@
           busy ? "Refreshing…" : "Refresh")),
       err ? h("div", { className: "iacg-err", role: "alert" }, err) : null,
       h("iframe", { className: "iacg-frame", title: "IaC Genius mission board",
-                    srcDoc: pageHtml || undefined }));
+                    srcDoc: pageHtml || undefined }),
+      toast && SDK.components.Toast ? h(SDK.components.Toast, { toast: toast }) : null);
   }
 
   window.__HERMES_PLUGINS__.register("iacg-board", BoardPage);
