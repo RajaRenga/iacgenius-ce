@@ -24,6 +24,27 @@ conversation say so plainly**, e.g.:
 If the request names a *different* cloud than the mission's target, do not switch it — say the mission
 is built for its target and a different cloud needs a new mission. Never mix providers in one stack.
 
+## Knowledge — conventions remembered across missions
+
+IaCGenius remembers org-level conventions (region, naming prefix, owner tag, retention policy) as
+knowledge cards and applies them automatically as disclosed defaults, so the user is **not re-asked**.
+Onboarding the user on this is part of intake:
+
+- **Review:** `iacg_mission action=knowledge` (optional `provider=<aws>`) lists what is remembered
+  (key = value, who declared it). Show it when the user asks "what do you remember / show my knowledge".
+- **Add:** when the user says "remember our region is us-east-1" (or any convention), call
+  `iacg_mission action=remember key=region value=us-east-1 by="<the user's name>"` and confirm what was
+  saved. Confirming a mission also auto-remembers its org-level choices.
+- **Override for ONE mission (special request):** if the user says "this is a special request, I need
+  eu-west-1 for this one", extract `region=eu-west-1` as STATED (Step 1) for THIS mission. A stated value
+  always beats remembered knowledge, for this mission only — the saved default is **not** changed. Say so
+  plainly: "Using eu-west-1 for this mission; your saved default stays us-east-1."
+- **Forget:** `iacg_mission action=forget key=region` drops a remembered convention.
+
+Right after the target lock, briefly note the conventions that apply, e.g. "Using your saved region
+**us-east-1** — name a different region to override it for this mission." If nothing is remembered yet,
+invite the user to declare their conventions once so future missions stop asking.
+
 ## Step 1 — extract what the user STATED (your only model job)
 
 Read the request and report **only** the catalogue keys it actually states or unambiguously implies.
