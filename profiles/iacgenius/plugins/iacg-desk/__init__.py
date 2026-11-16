@@ -79,7 +79,7 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
 # ------------------------------------------------------------------ iacg_mission
 
 ACTIONS = ("create", "resolve", "answer", "skip", "sheet", "confirm",
-           "status", "validate", "approve", "deliver", "onboard", "board",
+           "status", "validate", "approve", "deliver", "package", "onboard", "board",
            "schema", "brief", "rules-check")
 
 
@@ -161,6 +161,8 @@ def handle_mission(params: dict, **_kwargs) -> str:
         if not p.get("repo"):
             return "deliver needs repo (owner/name); the desk holds the token, gates first, reads the commit back"
         return _run(["deliver", mid, "--repo", str(p["repo"]), "--base", str(p.get("base", "main"))], timeout=900)
+    if action == "package":
+        return _run(["package", mid] + (["--out", str(p["out"])] if p.get("out") else []), timeout=300)
     return f"unhandled action {action}"
 
 
@@ -177,7 +179,9 @@ MISSION_SCHEMA = {
         "evidence and delivery gate. validate = run terraform fmt/init/validate, tflint, checkov and the secret scan "
         "over the mission tree; missing tools are NOT_RUN, never PASS. approve = record a NAMED human acceptance "
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
-        "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. onboard = warm "
+        "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. package = sync "
+        "the work/ provenance folder (finalized decisions + who did what) and zip the whole mission folder to "
+        "<workspace>/<mission_id>.zip for a single Files-tab download; the .tf stack stays at the folder root. onboard = warm "
         "the shared provider cache once, confirm, reuse. board = the mission board snapshot. GROUNDING (binary schema "
         "is truth, MCP is guidance): schema = per-resource excerpts from the cached provider schema OKF (needs provider "
         "+ version, e.g. aws 6.58.0, and resource types) — use these to verify resource arguments before writing; "
@@ -212,6 +216,7 @@ MISSION_SCHEMA = {
             "reason": {"type": "string", "description": "the human's reason, in their words"},
             "repo": {"type": "string", "description": "deliver: owner/name"},
             "base": {"type": "string", "description": "deliver: PR base branch (default main)"},
+            "out": {"type": "string", "description": "package: zip output path (default <workspace>/<mission_id>.zip)"},
             "confirm": {"type": "boolean", "description": "onboard: the user confirmed the baseline"},
         },
         "required": ["action"],

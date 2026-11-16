@@ -43,7 +43,8 @@ def test_packet_shape_and_sorted_json(store, mid):
     ledger.add(store, mid, "m_key", origin="MUST_ASK")
     pkt = ledger.packet(store, mid)
     assert pkt["packet_type"] == "decision_ledger" and pkt["schema_version"] == "1.0.0"
-    assert pkt["coverage"] == "NOT_RUN" and pkt["coverage_not_run_reason"]
+    # Coverage is computed against the catalogue (Phase 1): arbitrary keys don't cover the required set.
+    assert pkt["coverage"] == "FAIL" and pkt["missing_keys"]
     rows = {r["key"]: r for r in pkt["rows"]}
     assert [r["key"] for r in pkt["rows"]] == sorted(rows)
     assert rows["m_key"]["decision_class"] == "MUST_ASK"

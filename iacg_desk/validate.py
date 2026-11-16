@@ -19,9 +19,19 @@ SECRET_PATTERNS = [
     ("private-key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
     ("aws-access-key-id", re.compile(r"\b(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\b")),
     ("aws-secret-access-key", re.compile(r"(?i)aws_secret_access_key\s*[=:]\s*[A-Za-z0-9/+=]{16,}")),
-    ("generic-secret", re.compile(r"(?i)\b(?:password|passwd|api[_-]?key|secret|token)\s*[=:]\s*[\"']?[^\s\"',;]{8,}")),
+    # A hardcoded secret is a literal. A reference (var./local./aws_x.), a function call (jsonencode(...))
+    # or an interpolation (${...}) is NOT a secret — flagging the sensitive-variable pattern would block
+    # every correctly-generated secret stack. The lookahead skips those value forms.
+    ("generic-secret", re.compile(r"(?i)\b(?:password|passwd|api[_-]?key|secret|token)\s*[=:]\s*[\"']?"
+                                  r"(?!(?:var|local|data|module|each|count|terraform|path|aws_[a-z0-9_]+|null|true|false|sensitive|nonsensitive)\b"
+                                  r"|[a-z_][a-z0-9_]*\(|\$\{)[^\s\"',;]{8,}")),
     ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b")),
 ]
+
+
+def _lock_checksum_mismatch(out, err):
+    text = (out or "") + (err or "")
+    return "does not match any of the checksums" in text or "dependency lock file" in text
 
 
 def default_runner(args, cwd=None, env=None):
@@ -157,6 +167,12 @@ def run(store, mid, tree=None, runner=None, which=shutil.which):
                            not_run_reason=f"init failed (exit {rc}): {(err or out).strip()[-300:]}"))
         else:
             rc, out, err = runner([binary, f"-chdir={tree}", "validate", "-json"], str(tree), env)
+            # A shared provider cache can race a concurrent init, leaving a lock file whose checksums do
+            # not match the cached package. Recompute the lock from the real package (-upgrade) and retry
+            # once; if it still fails, report FAIL honestly.
+            if rc != 0 and _lock_checksum_mismatch(out, err):
+                runner([binary, f"-chdir={tree}", "init", "-backend=false", "-input=false", "-upgrade"], str(tree), env)
+                rc, out, err = runner([binary, f"-chdir={tree}", "validate", "-json"], str(tree), env)
             record(_packet(mid, attempt, "validate", "PASS" if rc == 0 else "FAIL", binary, tf_version,
                            _parse_findings("validate", out, err) if rc else None, exit_code=rc))
 

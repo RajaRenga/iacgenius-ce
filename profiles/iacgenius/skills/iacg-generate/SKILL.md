@@ -76,7 +76,11 @@ not ask for — an unrequested resource is unrequested cost and attack surface.
   NEVER `<type>.<attribute>` (e.g. `aws_instance.private_ip`) — that is a reference to an undeclared resource.
 - Include EVERY required argument the pinned schema declares (e.g. `aws_kms_alias.target_key_id`). Check the
   schema excerpt before writing each resource.
-- Never hardcode a secret/password/token. Use a variable with `sensitive = true` and `default = null`.
+- Never hardcode a secret/password/token. Use a variable with `sensitive = true` and `default = null`,
+  and reference it (`password = var.db_password`) — a reference is not a hardcoded secret.
+- `precondition` / `postcondition` blocks are ONLY valid INSIDE a `lifecycle { ... }` block (or an
+  `output`/`check` block). NEVER place a bare `precondition { ... }` as a top-level block in a resource
+  body — terraform rejects it. Wrap it: `lifecycle { precondition { condition = ... error_message = ... } }`.
 - Close every block you open; never leave a truncated/unclosed block at end of file.
 - Mark any output whose value contains sensitive data with `sensitive = true` (terraform rejects
   unmarked sensitive outputs).

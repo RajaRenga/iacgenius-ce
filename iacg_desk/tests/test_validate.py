@@ -94,3 +94,54 @@ def test_must_ask_gate_before_toolchain(store, mid, tree):
         raise AssertionError("validate ran with an open MUST_ASK")
     except ValueError as exc:
         assert "MUST_ASK" in str(exc)
+
+
+def test_secret_scan_ignores_reference_values(store, mid, tree):
+    # The correct sensitive-variable pattern (password = var.x, jsonencode(...), interpolation) is NOT a
+    # hardcoded secret and must not fail the hard gate.
+    (tree / "secrets.tf").write_text(
+        'locals {\n  payload = { password = var.db_password }\n}\n'
+        'resource "aws_secretsmanager_secret_version" "v" {\n'
+        '  secret_string = jsonencode(local.payload)\n'
+        '  token         = "${var.api_token}"\n}\n', encoding="utf-8")
+    packets = validate.run(store, mid, tree=tree, runner=make_runner([]), which=lambda n: f"/usr/bin/{n}")
+    assert next(p for p in packets if p["check"] == "secret_scan")["status"] == "PASS"
+
+
+def test_secret_scan_still_flags_literal_secret(store, mid, tree):
+    (tree / "secrets.tf").write_text('locals {\n  password = "SuperSecret123"\n}\n', encoding="utf-8")
+    packets = validate.run(store, mid, tree=tree, runner=make_runner([]), which=lambda n: f"/usr/bin/{n}")
+    scan = next(p for p in packets if p["check"] == "secret_scan")
+    assert scan["status"] == "FAIL"
+    assert "SuperSecret123" not in json.dumps(scan)  # value withheld
+
+
+def test_lock_checksum_mismatch_detection():
+    assert validate._lock_checksum_mismatch("", "does not match any of the checksums recorded in the dependency lock file")
+    assert not validate._lock_checksum_mismatch('{"valid": true}', "")
+
+
+def test_validate_retries_on_lock_checksum_mismatch(store, mid, tree):
+    calls, n = [], {"validate": 0}
+    mismatch = json.dumps({"valid": False, "diagnostics": [{"severity": "error", "summary": "Could not load plugin",
+        "detail": "the cached package for registry.terraform.io/hashicorp/aws 6.58.0 (in .terraform/providers) "
+                  "does not match any of the checksums recorded in the dependency lock file: "}]})
+
+    def run(args, cwd=None, env=None):
+        calls.append(list(args))
+        if "--version" in args:
+            return 0, "Terraform v1.15.9", ""
+        if "fmt" in args or "init" in args:
+            return 0, "", ""
+        if "validate" in args:
+            n["validate"] += 1
+            return (1, mismatch, "") if n["validate"] == 1 else (0, json.dumps({"valid": True, "diagnostics": []}), "")
+        if args[0] in ("tflint", "checkov"):
+            return 0, "{}", ""
+        raise AssertionError(f"unexpected args {args}")
+
+    packets = validate.run(store, mid, tree=tree, runner=run, which=lambda n: f"/usr/bin/{n}")
+    v = next(p for p in packets if p["check"] == "validate")
+    assert v["status"] == "PASS"                       # recovered after recomputing the lock
+    assert n["validate"] == 2                          # retried exactly once
+    assert any("init" in a and "-upgrade" in a for a in calls)  # lock recomputed from the real package

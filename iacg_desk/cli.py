@@ -6,7 +6,7 @@ import json
 import sys
 
 from . import (board, build_sheet, capability, deliver, gates, ledger, onboard, repair, resolver,
-               schema_okf, validate, versions)
+               schema_okf, validate, versions, workspace)
 from .store import Store
 
 
@@ -88,6 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("deliver", help="GitHub PR whose body is the ledger, then read-back")
     p.add_argument("mission_id"); p.add_argument("--repo", required=True, help="owner/name")
     p.add_argument("--base", default="main"); p.add_argument("--tree")
+
+    p = sub.add_parser("package", help="sync the work/ provenance folder and zip the whole mission folder for download")
+    p.add_argument("mission_id"); p.add_argument("--out", help="zip path (default: <workspace>/<mission_id>.zip)")
 
     p = sub.add_parser("onboard", help="warm the provider cache once, confirm, reuse")
     p.add_argument("--confirm", action="store_true"); p.add_argument("--by", default="operator")
@@ -188,6 +191,8 @@ def main(argv=None) -> int:
             print(json.dumps(gates.delivery_gate(store, args.mission_id), indent=2))
         elif args.cmd == "deliver":
             print(json.dumps(deliver.deliver(store, args.mission_id, args.repo, args.base, tree=args.tree), indent=2))
+        elif args.cmd == "package":
+            print(json.dumps(workspace.package(store, args.mission_id, out=args.out), indent=2))
         elif args.cmd == "onboard":
             print(json.dumps(onboard.onboard(store, confirmed_by=args.by if args.confirm else None), indent=2))
         elif args.cmd == "board":

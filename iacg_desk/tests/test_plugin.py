@@ -68,8 +68,9 @@ def test_register():
     plugin.register(ctx)
     assert set(ctx.tools) == {"iacg_mission", "iacg_templates"}
     assert set(ctx.hooks) == {"on_session_start", "pre_tool_call"}
-    assert ctx.tools["iacg_mission"]["schema"]["parameters"]["properties"]["action"]["enum"] == [
-        "create", "status", "validate", "approve", "deliver", "onboard", "board"]
+    enum = ctx.tools["iacg_mission"]["schema"]["parameters"]["properties"]["action"]["enum"]
+    assert enum == list(plugin.ACTIONS)  # the schema enum tracks the dispatch actions
+    assert {"create", "confirm", "validate", "package", "schema"} <= set(enum)
 
 
 def test_mission_action_validation():

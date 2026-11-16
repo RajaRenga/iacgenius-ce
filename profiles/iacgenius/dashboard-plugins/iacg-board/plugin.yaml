@@ -1,3 +1,4 @@
 name: iacg-board
 version: "0.1.0"
+requires_hermes: ">=0.23.1"
 description: "IaC Genius CE Board tab. The mission issue board the desk writes: findings, evidence with tool+version, repair attempts spent/allowed, disposition and next owner. Served from the desk snapshot, so it never invents live state."
