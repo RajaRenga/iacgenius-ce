@@ -5,8 +5,8 @@ import argparse
 import json
 import sys
 
-from . import (board, build_sheet, capability, deliver, gates, ledger, onboard, repair, resolver,
-               schema_okf, validate, versions, workspace)
+from . import (board, build_sheet, capability, deliver, gates, knowledge, ledger, onboard, repair,
+               resolver, schema_okf, validate, versions, workspace)
 from .store import Store
 
 
@@ -91,6 +91,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("package", help="sync the work/ provenance folder and zip the whole mission folder for download")
     p.add_argument("mission_id"); p.add_argument("--out", help="zip path (default: <workspace>/<mission_id>.zip)")
+
+    p = sub.add_parser("remember", help="store a durable profile fact reused across missions (e.g. region=us-east-1)")
+    p.add_argument("pair", metavar="KEY=VALUE")
+    p.add_argument("--provider", default="aws", choices=["aws", "azure", "gcp"]); p.add_argument("--by", required=True)
+
+    p = sub.add_parser("knowledge", help="list the durable profile facts IaCGenius remembers")
+    p.add_argument("--provider", choices=["aws", "azure", "gcp"])
+
+    p = sub.add_parser("forget", help="drop a remembered profile fact")
+    p.add_argument("key"); p.add_argument("--provider", default="aws", choices=["aws", "azure", "gcp"])
 
     p = sub.add_parser("onboard", help="warm the provider cache once, confirm, reuse")
     p.add_argument("--confirm", action="store_true"); p.add_argument("--by", default="operator")
@@ -193,6 +203,13 @@ def main(argv=None) -> int:
             print(json.dumps(deliver.deliver(store, args.mission_id, args.repo, args.base, tree=args.tree), indent=2))
         elif args.cmd == "package":
             print(json.dumps(workspace.package(store, args.mission_id, out=args.out), indent=2))
+        elif args.cmd == "remember":
+            key, value = _pair(args.pair)
+            print(json.dumps(knowledge.remember(store, args.provider, key, value, args.by), indent=2))
+        elif args.cmd == "knowledge":
+            print(json.dumps(knowledge.facts(store, args.provider), indent=2))
+        elif args.cmd == "forget":
+            print(json.dumps(knowledge.forget(store, args.provider, args.key), indent=2))
         elif args.cmd == "onboard":
             print(json.dumps(onboard.onboard(store, confirmed_by=args.by if args.confirm else None), indent=2))
         elif args.cmd == "board":

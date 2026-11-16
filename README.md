@@ -2,24 +2,23 @@
 
 # IaC Genius Community Edition
 
-Describe the infrastructure you want in plain English. IaC Genius writes the Terraform (or OpenTofu),
+Describe the infrastructure you want in plain English. IaCGenius writes the Terraform (or OpenTofu),
 runs the real validators over it, fixes what it can within a fixed budget, and hands you a pull request
 to review. It runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent).
 
 It never applies anything. You remain the one who runs `terraform apply`, somewhere else, after you have
-read the diff. The desk holds no cloud credentials and does not need them to validate.
+read the diff. IaCGenius holds no cloud credentials and does not need them to validate.
 
 ## How it works
 
-Ask for something like "a private RDS database with customer-managed encryption." The desk writes down
+Ask for something like "a private RDS database with customer-managed encryption." IaCGenius writes down
 what you said in a decision ledger, then asks the few questions that actually cost money or cannot be
 undone before it spends anything. It pins the Terraform and provider versions and checks every resource
-argument against the real provider schema (`terraform providers schema -json`) instead of guessing. There
-is no template catalog here; grounding comes from that schema and from read-only registry knowledge (the
-Terraform MCP, AWS Knowledge MCP, DeepWiki).
+argument against the real provider schema (`terraform providers schema -json`) instead of guessing, drawing
+on read-only registry knowledge (the Terraform MCP, AWS Knowledge MCP, DeepWiki) as guidance.
 
 Then it generates the stack and runs the toolchain: `terraform validate`, `tflint`, `checkov`, and a secret
-scan. Correctness problems block. Security findings are yours to accept or fix, by name; the desk will not
+scan. Correctness problems block. Security findings are yours to accept or fix, by name; IaCGenius will not
 quietly pass them. It repairs within a bounded budget, then stops and asks a person. Everything it did
 shows up on a board with the tool, the version, and the result. A scanner that did not run is marked
 `NOT_RUN`, never `PASS`.
@@ -31,9 +30,18 @@ it landed.
 
 Each mission is one folder. The generated `.tf` files sit at the top. A separate `work/` folder keeps what
 was decided and who decided it: the ledger, the frozen build sheet, the validation evidence, the named
-acceptances. A `README` in the folder explains how to pick it up again later. Ask the desk to `package` a
+acceptances. A `README` in the folder explains how to pick it up again later. Ask IaCGenius to `package` a
 mission and it zips the whole folder, so you can download it from the dashboard Files tab and explore it
 offline.
+
+## It remembers your conventions
+
+Tell IaCGenius once that your region is `us-east-1`, or your naming prefix, owner tag, or retention
+policy, and it stops asking. Declared facts are kept as small knowledge cards (Open Knowledge Format,
+with who said it and when) and reused across missions: a new stack resolves your region from knowledge
+instead of asking again, and the build brief carries those facts as inputs. You can still override any
+of them per mission by saying so. Use `remember`, `knowledge`, and `forget` to manage them; confirming a
+mission also remembers its org-level choices automatically.
 
 ## What it never does
 

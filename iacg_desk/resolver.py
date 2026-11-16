@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 
-from . import catalogue, ledger
+from . import catalogue, knowledge, ledger
 from .store import Store, now
 
 
@@ -59,6 +59,13 @@ def resolve(store: Store, mid: str, stated: dict | None = None, ask: bool = True
                            rationale="you said this in the request")
                 continue
             discarded[key] = f"{value!r} is not an accepted value for {provider}"
+
+        fact = knowledge.lookup(store, provider, key)
+        if fact and _fits(provider, key, fact["value"]):
+            ledger.add(store, mid, key, fact["value"], origin="SOURCE",
+                       source=knowledge.source_ref(provider, key, fact["value"]), reversibility=rev,
+                       rationale="remembered profile fact you declared earlier")
+            continue
 
         fallback = catalogue.catalogue_default(provider, key)
         if ask and catalogue.is_askable(key) and key not in catalogue.DISCLOSED_NOT_ASKED and fallback is not None:

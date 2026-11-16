@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS repairs(
 CREATE TABLE IF NOT EXISTS build_sheets(
   mission_id TEXT PRIMARY KEY, status TEXT NOT NULL, sheet_hash TEXT, confirmed_by TEXT,
   confirmed_at TEXT, sheet TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS knowledge(
+  provider TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, slug TEXT NOT NULL,
+  hash TEXT NOT NULL, captured_by TEXT NOT NULL, captured_at TEXT NOT NULL,
+  PRIMARY KEY(provider, key));
 """
 
 
@@ -172,3 +176,22 @@ class Store:
         if not rows:
             return None
         return json.loads(rows[0]["sheet"])
+
+    # -- knowledge (durable profile facts, reused across missions) ---------
+    def knowledge_upsert(self, provider, key, value, slug, hash, captured_by) -> None:
+        self._exec("INSERT INTO knowledge VALUES (?,?,?,?,?,?,?) "
+                   "ON CONFLICT(provider,key) DO UPDATE SET value=excluded.value, slug=excluded.slug, "
+                   "hash=excluded.hash, captured_by=excluded.captured_by, captured_at=excluded.captured_at",
+                   (provider, key, value, slug, hash, captured_by, now()))
+
+    def knowledge_rows(self, provider=None) -> list[dict]:
+        if provider:
+            return self._rows("SELECT * FROM knowledge WHERE provider=? ORDER BY key", (provider,))
+        return self._rows("SELECT * FROM knowledge ORDER BY provider, key")
+
+    def knowledge_get(self, provider, key) -> dict | None:
+        rows = self._rows("SELECT * FROM knowledge WHERE provider=? AND key=?", (provider, key))
+        return rows[0] if rows else None
+
+    def knowledge_delete(self, provider, key) -> None:
+        self._exec("DELETE FROM knowledge WHERE provider=? AND key=?", (provider, key))

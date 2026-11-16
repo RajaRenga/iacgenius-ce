@@ -82,7 +82,8 @@ def confirm(store: Store, mid: str, *, confirmed_by: str) -> dict:
     store.sheet_put(mid, sheet)
     store.set_state(mid, "confirmed", None)
     _write_handoff(store, mid, sheet)
-    from . import workspace
+    from . import knowledge, workspace
+    knowledge.learn_from_mission(store, mid, confirmed_by)  # remember org-level profile facts for next time
     workspace.sync(store, mid)  # capture the finalized scope + who confirmed it in the mission's work/ folder
     return sheet
 

@@ -80,7 +80,7 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
 
 ACTIONS = ("create", "resolve", "answer", "skip", "sheet", "confirm",
            "status", "validate", "approve", "deliver", "package", "onboard", "board",
-           "schema", "brief", "rules-check")
+           "schema", "brief", "rules-check", "remember", "knowledge", "forget")
 
 
 def handle_mission(params: dict, **_kwargs) -> str:
@@ -117,6 +117,16 @@ def handle_mission(params: dict, **_kwargs) -> str:
         for r in resources:
             args += ["--resource", str(r)]
         return _run(args, timeout=300)
+    if action == "remember":
+        if not p.get("key") or p.get("value") is None or not p.get("by"):
+            return "remember needs key, value and by (the human's name) — e.g. key=region value=us-east-1"
+        return _run(["remember", f"{p['key']}={p['value']}", "--provider", p.get("provider", "aws"), "--by", str(p["by"])])
+    if action == "knowledge":
+        return _run(["knowledge"] + (["--provider", str(p["provider"])] if p.get("provider") else []))
+    if action == "forget":
+        if not p.get("key"):
+            return "forget needs key"
+        return _run(["forget", str(p["key"]), "--provider", p.get("provider", "aws")])
     if not p.get("mission_id"):
         return f"{action} needs mission_id"
     mid = str(p["mission_id"])
@@ -181,7 +191,11 @@ MISSION_SCHEMA = {
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
         "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. package = sync "
         "the work/ provenance folder (finalized decisions + who did what) and zip the whole mission folder to "
-        "<workspace>/<mission_id>.zip for a single Files-tab download; the .tf stack stays at the folder root. onboard = warm "
+        "<workspace>/<mission_id>.zip for a single Files-tab download; the .tf stack stays at the folder root. "
+        "KNOWLEDGE (declare once, reuse across missions): remember = store a durable profile fact (needs key, value, by; "
+        "e.g. key=region value=us-east-1) so later missions resolve it without re-asking; knowledge = list the remembered "
+        "facts; forget = drop one. Confirming a mission also auto-remembers its org-level facts (region, naming prefix, "
+        "owner tag, retention). onboard = warm "
         "the shared provider cache once, confirm, reuse. board = the mission board snapshot. GROUNDING (binary schema "
         "is truth, MCP is guidance): schema = per-resource excerpts from the cached provider schema OKF (needs provider "
         "+ version, e.g. aws 6.58.0, and resource types) — use these to verify resource arguments before writing; "

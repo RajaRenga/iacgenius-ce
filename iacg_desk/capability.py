@@ -17,7 +17,7 @@ import json
 import re
 from pathlib import Path
 
-from . import ledger
+from . import knowledge, ledger
 
 # Curated from the sealed V2 rule-sets. Each rule: id, instruction, consequence, severity,
 # scope (provider/service/tier), and an optional detector the desk can verify on the HCL.
@@ -146,9 +146,13 @@ def context_block(store, mid: str) -> str:
     """
     mission = store.mission(mid)
     rules = select_rules(mission["provider"], mission["build_tier"])
-    lines = [ledger.prompt_block(store, mid), "",
-             f"## Expert rules that apply ({mission['provider']} / {mission['build_tier']}) — apply ALL before validate",
-             "These are deterministic requirements, not suggestions. Each names the consequence of ignoring it."]
+    lines = [ledger.prompt_block(store, mid)]
+    kb = knowledge.context_block(store, mission["provider"])
+    if kb:
+        lines += ["", kb]
+    lines += ["",
+              f"## Expert rules that apply ({mission['provider']} / {mission['build_tier']}) — apply ALL before validate",
+              "These are deterministic requirements, not suggestions. Each names the consequence of ignoring it."]
     for r in rules:
         lines.append(f"- [{r['id']} | {r['severity']}] {r['instruction']}")
         lines.append(f"    why: {r['consequence']}")

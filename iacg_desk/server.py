@@ -13,7 +13,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 ALLOWED = {"create", "resolve", "answer", "skip", "sheet", "confirm", "pin", "ledger", "brief",
-           "rules-check", "status", "validate", "schema", "repair", "approve", "deliver", "package", "onboard", "board"}
+           "rules-check", "status", "validate", "schema", "repair", "approve", "deliver", "package",
+           "remember", "knowledge", "forget", "onboard", "board"}
 MAX_REQUEST = 64 * 1024
 MAX_OUTPUT = 400 * 1024
 
