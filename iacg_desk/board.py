@@ -1,11 +1,13 @@
-"""Mission board snapshot: exactly what the store holds, never invented live state.
+"""Mission board snapshot: grounded in the filesystem, never invented live state.
 
-Writes <data>/board.json and <data>/board.html; the dashboard plugin serves these files.
+A mission appears only if its tree is actually on disk; a lost tree is forgotten, not shown as a
+stale record. Writes <data>/board.json and <data>/board.html; the dashboard plugin serves these files.
 """
 from __future__ import annotations
 
 import html
 import json
+from pathlib import Path
 
 from . import gates, ledger, repair
 from .store import now
@@ -30,6 +32,10 @@ def snapshot(store) -> dict:
     missions = []
     for m in store.missions():
         mid = m["id"]
+        # Filesystem is the truth: a mission whose tree is gone is forgotten, not shown as a stale record.
+        tree = m.get("tree")
+        if not (tree and Path(tree).is_dir()):
+            continue
         evidence = [{"check": r["check_name"], "tool": r["tool"], "version": r["version"], "status": r["status"],
                      "findings": r["findings"], "not_run_reason": r["not_run_reason"],
                      "attempt_number": r["attempt_number"]}

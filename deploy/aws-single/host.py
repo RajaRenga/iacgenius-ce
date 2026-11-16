@@ -49,7 +49,29 @@ def durable_url(cfg):
     return f"s3://{cfg['bucket']}/state"
 
 
+def sync_enabled(cfg):
+    return bool(cfg.get('s3_sync'))
+
+
+def restore_sync(cfg):
+    """Pull the incremental S3 mirror down (only missing/changed files). Filesystem is the truth."""
+    pairs = ((WORK_HOME, 'work'), (DESK_HOME, 'iacg'), (HERMES_HOME / 'profiles', 'profiles'))
+    for home, name in pairs:
+        home.mkdir(parents=True, exist_ok=True)
+        got = subprocess.run(['aws', 's3', 'sync', f"s3://{cfg['bucket']}/live/{name}/", str(home),
+                              '--region', cfg['region'], '--only-show-errors'], capture_output=True, text=True)
+        print(f's3 sync restore {name}: {"ok" if got.returncode == 0 else "no prior mirror; starting fresh"}')
+    for home in (WORK_HOME, DESK_HOME, HERMES_HOME / 'profiles'):
+        if home.exists():
+            run('chown', '-R', f'{UID}:{UID}', str(home))
+    DESK_RUNDIR.mkdir(parents=True, exist_ok=True)
+    os.chown(DESK_RUNDIR, UID, UID)
+
+
 def restore_state(cfg):
+    if sync_enabled(cfg):
+        restore_sync(cfg)
+        return
     for home, name in ((HERMES_HOME, 'hermes'), (DESK_HOME, 'iacg')):
         home.mkdir(parents=True, exist_ok=True)
         os.chown(home, UID, UID)
@@ -272,20 +294,37 @@ aws s3 cp /opt/iacgenius/iacg-state.tar.gz s3://__BUCKET__/state/iacg.tar.gz --r
 '''
 
 
+SYNC = '''#!/bin/bash
+# Incremental S3 mirror (optional, s3_sync=true). `aws s3 sync` transfers only changed files, so
+# unchanged state is never re-transmitted. The filesystem is the source of truth; this mirrors it.
+set -euo pipefail
+aws s3 sync /data/iacg-work s3://__BUCKET__/live/work/ --region __REGION__ --delete \\
+  --exclude '.terraform/*' --exclude '*/.terraform/*' --exclude '*.zip' --exclude '.modelkey.*' --only-show-errors
+aws s3 sync /data/iacg s3://__BUCKET__/live/iacg/ --region __REGION__ \\
+  --exclude 'plugins/*' --exclude '*/__pycache__/*' --only-show-errors
+aws s3 sync /data/hermes/profiles s3://__BUCKET__/live/profiles/ --region __REGION__ \\
+  --exclude '*/__pycache__/*' --only-show-errors
+'''
+
+
 def checkpoint_units(cfg):
     script = Path('/opt/iacgenius/checkpoint.sh')
-    script.write_text(CHECKPOINT.replace('__BUCKET__', cfg['bucket']).replace('__REGION__', cfg['region']))
+    if sync_enabled(cfg):
+        body, every, desc = SYNC, '5min', 'IaC Genius CE incremental S3 sync (work + desk + profile)'
+    else:
+        body, every, desc = CHECKPOINT, '2min', 'IaC Genius CE Hermes home + desk state checkpoint to S3'
+    script.write_text(body.replace('__BUCKET__', cfg['bucket']).replace('__REGION__', cfg['region']))
     script.chmod(0o755)
     return {
         'iacgenius-checkpoint.service': f'''[Unit]
-Description=IaC Genius CE Hermes home + desk state checkpoint to S3
+Description={desc}
 [Service]
 Type=oneshot
 ExecStart={script.as_posix()}
 ''',
-        'iacgenius-checkpoint.timer': '''[Timer]
+        'iacgenius-checkpoint.timer': f'''[Timer]
 OnBootSec=2min
-OnUnitActiveSec=2min
+OnUnitActiveSec={every}
 [Install]
 WantedBy=timers.target
 ''',

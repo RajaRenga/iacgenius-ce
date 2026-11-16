@@ -1,0 +1,28 @@
+{
+  "name": "iacg-pickup",
+  "schema_version": "1.0.0",
+  "purpose": "Resume or finish a mission from one deterministic pickup packet (state, tree-exists, ledger, evidence, gate, next step) instead of hunting for files.",
+  "exclusive_role": "mission-pickup",
+  "inputs": {"allowed": ["mission_id", "pickup_packet"]},
+  "outputs": {"kind": "pickup_summary", "must_not_claim": ["validation_pass", "compliance", "delivery_success"]},
+  "never_do": [
+    "search files, read sqlite, or probe writability to discover state (pickup already has it)",
+    "invent a finding, decision, or pass not in the packet",
+    "accept a finding or approve delivery without the user's explicit named word",
+    "run apply or call a cloud write API"
+  ],
+  "trigger": {
+    "build_tier": ["minimal", "standard", "enterprise"],
+    "iac_tool": ["terraform", "opentofu"],
+    "provider": ["aws", "azure", "gcp"],
+    "task_kind": ["review", "status", "repair"]
+  },
+  "requires": {"binaries": [], "credentials": [], "network": [], "processes": [], "max_output_tokens": 6000, "timeout_seconds": 0},
+  "risk": "low",
+  "provenance": {
+    "authored_by": "the CE durability/pickup session",
+    "authored_at": "2026-11-16",
+    "origin": "authored-locally",
+    "source_reference": "Owner directive: no token waste: one deterministic pickup packet with a tree-exists flag; forget lost trees; regenerate from the frozen ledger."
+  }
+}

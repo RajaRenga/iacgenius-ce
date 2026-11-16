@@ -79,7 +79,7 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
 # ------------------------------------------------------------------ iacg_mission
 
 ACTIONS = ("create", "resolve", "answer", "skip", "sheet", "confirm",
-           "status", "validate", "approve", "deliver", "package", "onboard", "board",
+           "status", "pickup", "validate", "approve", "deliver", "package", "onboard", "board",
            "schema", "brief", "rules-check", "remember", "knowledge", "forget")
 
 
@@ -132,6 +132,8 @@ def handle_mission(params: dict, **_kwargs) -> str:
     mid = str(p["mission_id"])
     if action == "status":
         return _run(["status", mid])
+    if action == "pickup":
+        return _run(["pickup", mid])
     if action == "resolve":
         args = ["resolve", mid]
         for key, value in (p.get("stated") or {}).items():
@@ -186,7 +188,9 @@ MISSION_SCHEMA = {
         "MUST_ASK key; skip = fold remaining MUST_ASK to their disclosed defaults (answers optional); sheet = "
         "the review-only build-sheet preview (scope finalize); confirm = freeze ONE hash of the agreed choices "
         "(needs by: the human's name; generation runs only on the frozen revision). status = mission, "
-        "evidence and delivery gate. validate = run terraform fmt/init/validate, tflint, checkov and the secret scan "
+        "evidence and delivery gate. pickup = ONE complete packet to resume/finish a mission (state, tree-exists flag, "
+        "ledger, evidence/findings, repair budget, gate, exact next step) — use it FIRST when continuing a mission so "
+        "you never hunt for files; if the tree is gone it says so and points to regeneration. validate = run terraform fmt/init/validate, tflint, checkov and the secret scan "
         "over the mission tree; missing tools are NOT_RUN, never PASS. approve = record a NAMED human acceptance "
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
         "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. package = sync "

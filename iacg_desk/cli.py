@@ -5,8 +5,8 @@ import argparse
 import json
 import sys
 
-from . import (board, build_sheet, capability, deliver, gates, knowledge, ledger, onboard, repair,
-               resolver, schema_okf, validate, versions, workspace)
+from . import (board, build_sheet, capability, deliver, gates, knowledge, ledger, onboard, pickup,
+               repair, resolver, schema_okf, validate, versions, workspace)
 from .store import Store
 
 
@@ -68,6 +68,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("mission_id"); p.add_argument("--tree")
 
     p = sub.add_parser("status", help="mission status, evidence and gate")
+    p.add_argument("mission_id")
+
+    p = sub.add_parser("pickup", help="one complete packet to resume/finish a mission (state, tree-exists, ledger, findings, next step)")
     p.add_argument("mission_id")
 
     p = sub.add_parser("validate", help="run the toolchain over the mission tree (fmt/init/validate/tflint/checkov/secrets)")
@@ -181,6 +184,8 @@ def main(argv=None) -> int:
                                            for r in store.latest_evidence(args.mission_id).values()],
                               "gate": gates.delivery_gate(store, args.mission_id),
                               "repairs": store.repairs(args.mission_id)}, indent=2, default=str))
+        elif args.cmd == "pickup":
+            print(json.dumps(pickup.pickup(store, args.mission_id), indent=2, default=str))
         elif args.cmd == "validate":
             packets = validate.run(store, args.mission_id, tree=args.tree)
             print(json.dumps([{k: p[k] for k in ("check", "status", "tool") if k in p} |

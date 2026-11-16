@@ -17,8 +17,10 @@ def test_help_and_commands(capsys):
 def test_create_answer_board_cli(tmp_path, capsys, monkeypatch):
     monkeypatch.setenv("IACG_HOME", str(tmp_path / "data"))
     monkeypatch.delenv("IACG_REPAIR_BUDGET", raising=False)
+    tree = tmp_path / "tree"
+    tree.mkdir()  # the board is filesystem-grounded: a mission shows only if its tree exists
     assert cli.main(["create", "a bucket", "--requirement", "one private bucket",
-                     "--must-ask", "budget"]) == 0
+                     "--must-ask", "budget", "--tree", str(tree)]) == 0
     created = json.loads(capsys.readouterr().out)
     mid = created["mission_id"]
     assert mid.startswith("m_") and len(mid) == 14
@@ -32,6 +34,21 @@ def test_create_answer_board_cli(tmp_path, capsys, monkeypatch):
     assert mid in capsys.readouterr().out
     assert (tmp_path / "data" / "board.json").is_file()
     assert (tmp_path / "data" / "board.html").is_file()
+
+
+def test_pickup_packet_flags_missing_tree(tmp_path, capsys, monkeypatch):
+    monkeypatch.setenv("IACG_HOME", str(tmp_path / "data"))
+    assert cli.main(["create", "a bucket", "--tree", str(tmp_path / "gone")]) == 0
+    mid = json.loads(capsys.readouterr().out)["mission_id"]
+    assert cli.main(["pickup", mid]) == 0
+    pkt = json.loads(capsys.readouterr().out)
+    assert pkt["tree_exists"] is False
+    assert "NOT on disk" in pkt["next_step"] and "Regenerate" in pkt["next_step"]
+    assert "ledger" in pkt and "evidence" in pkt and "gate" in pkt
+    # with a real tree present, the flag flips
+    (tmp_path / "gone").mkdir()
+    assert cli.main(["pickup", mid]) == 0
+    assert json.loads(capsys.readouterr().out)["tree_exists"] is True
 
 
 def test_unknown_mission_errors(tmp_path, capsys):
