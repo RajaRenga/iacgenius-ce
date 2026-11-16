@@ -158,6 +158,32 @@ def _meter(spent, allowed) -> str:
             f'<span class="meter-label">{spent} / {allowed} repair attempts used</span>')
 
 
+def _guidance(m) -> str:
+    """Plain-language readiness + the concrete next step, so a card is self-explanatory."""
+    ev = {e["check"]: e["status"] for e in m["evidence"]}
+    hard_ok = ev.get("validate") == "PASS" and ev.get("secret_scan") == "PASS"
+    if hard_ok:
+        readiness = ("Code is valid — terraform validate and the secret scan passed. "
+                     "Anything still open is a decision for you, not a bug.")
+    else:
+        readiness = "A correctness gate has not passed yet — this needs repair before it can be delivered."
+    disp, mid, owner = m["disposition"], m["id"], m["next_owner"]
+    if disp == "delivered":
+        step = "Delivered and read back verified. Nothing more to do."
+    elif disp == "deliverable":
+        step = (f'Ready. In chat: "deliver {mid} to owner/repo" opens a PR, '
+                f'or "package {mid}" zips the folder to download from the Files tab.')
+    elif owner.startswith("human"):
+        step = (f'Your call. In chat: "show code {mid}" to review, accept any soft findings by name, '
+                f'then "approve delivery for {mid}".')
+    else:
+        step = (f'In chat: "status {mid}" for the evidence, "show code {mid}" to review. '
+                f'IaCGenius repairs within the budget, then it comes back to you.')
+    return (f'<div class="panel" style="margin-top:14px"><h3>Readiness &amp; next step</h3>'
+            f'<p style="margin:0 0 6px;font-size:12.5px">{html.escape(readiness)}</p>'
+            f'<p style="margin:0;font-size:12.5px;color:#3f3f46">{html.escape(step)}</p></div>')
+
+
 def _card(m) -> str:
     badges = (f'<span class="badge {_state_class(m["state"])}">{html.escape(m["state"])}</span>'
               f'<span class="badge {_disp_class(m["disposition"])}">{html.escape(m["disposition"])}</span>')
@@ -187,6 +213,7 @@ def _card(m) -> str:
         f'<div class="panel"><h3>Disposition reasons</h3><ul class="reasons">{reasons}</ul></div>'
         f'{questions}{acceptances}'
         '</div>'
+        f'{_guidance(m)}'
         f'<div class="owner">Next owner:&nbsp;<b>{html.escape(m["next_owner"])}</b></div>'
         '</article>')
 

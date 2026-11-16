@@ -9,6 +9,9 @@ to review. It runs on [Hermes Agent](https://github.com/NousResearch/hermes-agen
 It never applies anything. You remain the one who runs `terraform apply`, somewhere else, after you have
 read the diff. IaCGenius holds no cloud credentials and does not need them to validate.
 
+New to it? Follow the [user workflow](docs/WORKFLOW.md) — from reading the board, to investigating a
+mission, to accepting findings and finishing with a PR or a download.
+
 ## How it works
 
 Ask for something like "a private RDS database with customer-managed encryption." IaCGenius writes down
