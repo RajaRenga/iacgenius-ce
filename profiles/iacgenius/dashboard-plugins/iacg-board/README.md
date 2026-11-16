@@ -1,4 +1,4 @@
-# IaC Genius Board
+# IaCGenius Board
 
 A web dashboard tab for [Hermes Agent](https://github.com/NousResearch/hermes-agent) showing the IaC Genius
 **mission board**: findings, evidence with tool + version, repair attempts spent/allowed, disposition and next

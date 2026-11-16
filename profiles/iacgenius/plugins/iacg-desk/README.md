@@ -1,6 +1,6 @@
-# IaC Genius Desk
+# IaCGenius
 
-A deterministic mission desk for [Hermes Agent](https://github.com/NousResearch/hermes-agent): turn a
+IaCGenius for [Hermes Agent](https://github.com/NousResearch/hermes-agent): turn a
 plain-language infrastructure request into **validated Terraform/OpenTofu and a reviewable pull request**.
 The model proposes; the toolchain decides.
 
