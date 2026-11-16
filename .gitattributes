@@ -1,0 +1,10 @@
+# Shell scripts and code must stay LF so the release archive runs on Linux
+# (a CRLF `set -euo pipefail\r` breaks bash with exit 2).
+*.sh text eol=lf
+*.py text eol=lf
+*.tf text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.service text eol=lf
