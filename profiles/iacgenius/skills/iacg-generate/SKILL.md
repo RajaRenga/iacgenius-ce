@@ -78,6 +78,18 @@ not ask for — an unrequested resource is unrequested cost and attack surface.
   schema excerpt before writing each resource.
 - Never hardcode a secret/password/token. Use a variable with `sensitive = true` and `default = null`.
 - Close every block you open; never leave a truncated/unclosed block at end of file.
+- Mark any output whose value contains sensitive data with `sensitive = true` (terraform rejects
+  unmarked sensitive outputs).
+- NEVER create a dependency cycle. A resource policy that references a resource which references back
+  is a cycle (e.g. S3 bucket policy ↔ CloudFront distribution ↔ KMS; SQS queue ↔ its DLQ redrive; API
+  Gateway resource policy ↔ the REST API). Break cycles: scope a bucket/service policy with an account or
+  ARN-string condition instead of a resource reference that loops back, attach the policy as a separate
+  resource that depends on (not references) the target, or omit the mutual redrive/policy link. Run
+  `terraform validate` mentally for cycles before finishing.
+- When the request describes deploying into a VPC/subnets (e.g. "RDS in private subnets", "Lambda in a
+  VPC"), CREATE the VPC and subnets it needs — they are part of the request. Reference the created
+  `aws_subnet` resources (directly or via a local that resolves to them). Only use existing-subnet data
+  sources when the request explicitly says to use existing/pre-existing subnets.
 
 ## After writing
 
