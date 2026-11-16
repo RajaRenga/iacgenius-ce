@@ -1,4 +1,4 @@
-![IaC Genius Community Edition](docs/media/hero.png)
+![IaC Genius Community Edition](docs/media/marketplace-banner.png)
 
 # IaC Genius Community Edition
 
