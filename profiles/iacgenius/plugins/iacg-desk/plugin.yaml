@@ -1,10 +1,10 @@
 name: iacg-desk
 version: "0.1.0"
 requires_hermes: ">=0.23.1"
-description: IaC Genius CE desk. One tool over the iacg desk (missions, ledger, evidence, gates, delivery), read-only MCP grounding guidance, the mission board at session start, and a hard refusal of terraform/tofu apply and cloud write commands.
+description: IaC Genius CE desk. One tool over the iacg desk (missions, ledger, evidence, gates, delivery), read-only MCP grounding guidance, the mission board on the first turn, a hard refusal of terraform/tofu apply and cloud write commands, and a human approval gate for approve/confirm/deliver.
 provides_tools:
   - iacg_mission
   - iacg_templates
 provides_hooks:
-  - on_session_start
+  - pre_llm_call
   - pre_tool_call

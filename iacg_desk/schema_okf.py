@@ -11,6 +11,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from . import tool_env
 from .validate import default_runner
 
 PROVIDER_SOURCE = {"aws": "hashicorp/aws", "azure": "hashicorp/azurerm", "gcp": "hashicorp/google"}
@@ -41,7 +42,7 @@ def extract(store, provider, version, iac_tool="terraform", runner=None, which=s
         cache = store.data_dir / "plugins"
         cache.mkdir(parents=True, exist_ok=True)
         import os
-        env = dict(os.environ, TF_PLUGIN_CACHE_DIR=str(cache), TF_IN_AUTOMATION="1", CHECKPOINT_DISABLE="1")
+        env = tool_env(TF_PLUGIN_CACHE_DIR=str(cache))
         # Use the shared provider cache: init symlinks from it on Linux (no per-mission copy). Do NOT pass
         # -plugin-dir — it disables cache-based installation and demands the provider already be in that dir.
         rc, out, err = runner([binary, f"-chdir={tmp}", "init", "-backend=false", "-input=false"], tmp, env)

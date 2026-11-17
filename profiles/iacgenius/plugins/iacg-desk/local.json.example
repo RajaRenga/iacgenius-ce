@@ -1,6 +1,7 @@
 {
   "socket": "/run/iacg/iacg.sock",
   "home": "/data/iacg",
+  "work": "/data/iacg-work",
   "python": "",
   "src": ""
 }

@@ -13,7 +13,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from . import schema_okf, versions
+from . import schema_okf, tool_env, versions
 from .store import now
 from .validate import default_runner, _version
 
@@ -47,7 +47,7 @@ def onboard(store, runner=None, which=shutil.which, confirmed_by=None) -> dict:
     runner = runner or default_runner
     cache = store.data_dir / "plugins"
     cache.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, TF_PLUGIN_CACHE_DIR=str(cache), TF_IN_AUTOMATION="1", CHECKPOINT_DISABLE="1")
+    env = tool_env(TF_PLUGIN_CACHE_DIR=str(cache))
     observed = {name: _version(runner, which, name) for name in ("terraform", "tflint", "checkov")}
     steps = {}
     if which("terraform") is None:

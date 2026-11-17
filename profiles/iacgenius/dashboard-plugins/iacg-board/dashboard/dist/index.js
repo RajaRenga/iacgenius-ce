@@ -26,6 +26,7 @@
     var v = useState(0), version = v[0], setVersion = v[1];
     var last = useRef(null);
     var pageRef = useRef(null);
+    var iframeRef = useRef(null);
     var tt = useToast(), showToast = tt.showToast, toast = tt.toast;
     var toastRef = useRef(showToast); toastRef.current = showToast;
 
@@ -33,6 +34,8 @@
     // Core chat has no plugin seed hook, so the context rides the clipboard: the user pastes it.
     useEffect(function () {
       function onMsg(ev) {
+        var frame = iframeRef.current;
+        if (!frame || ev.source !== frame.contentWindow) return; // only trust our own board iframe
         var d = ev.data;
         if (!d || d.type !== "iacg-open-chat") return;
         var profile = new URLSearchParams(window.location.search).get("profile") || "iacgenius";
@@ -111,7 +114,7 @@
           busy ? "Refreshing…" : "Refresh")),
       err ? h("div", { className: "iacg-err", role: "alert" }, err) : null,
       h("iframe", { className: "iacg-frame", title: "IaC Genius mission board",
-                    srcDoc: pageHtml || undefined }),
+                    ref: iframeRef, sandbox: "allow-scripts", srcDoc: pageHtml || undefined }),
       toast && SDK.components.Toast ? h(SDK.components.Toast, { toast: toast }) : null);
   }
 

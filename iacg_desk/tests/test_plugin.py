@@ -67,7 +67,7 @@ def test_register():
     ctx = FakeCtx()
     plugin.register(ctx)
     assert set(ctx.tools) == {"iacg_mission", "iacg_templates"}
-    assert set(ctx.hooks) == {"on_session_start", "pre_tool_call"}
+    assert set(ctx.hooks) == {"pre_llm_call", "pre_tool_call"}
     enum = ctx.tools["iacg_mission"]["schema"]["parameters"]["properties"]["action"]["enum"]
     assert enum == list(plugin.ACTIONS)  # the schema enum tracks the dispatch actions
     assert {"create", "confirm", "validate", "package", "schema"} <= set(enum)
@@ -84,7 +84,7 @@ def test_templates_is_read_only_guidance():
     assert "read-only" in out and "schema" in out and "private s3 bucket" in out
 
 
-def test_session_start_surfaces_board(tmp_path, monkeypatch):
+def test_pre_llm_call_surfaces_board(tmp_path, monkeypatch):
     monkeypatch.setenv("IACG_HOME", str(tmp_path))
     monkeypatch.setenv("IACG_SOCKET", "")
     (tmp_path / "board.json").write_text(json.dumps({
@@ -92,10 +92,44 @@ def test_session_start_surfaces_board(tmp_path, monkeypatch):
         "missions": [{"id": "m_abc123abc123", "state": "needs_human", "title": "a bucket",
                       "attempts": {"spent": 2, "allowed": 2}, "disposition": "needs_human",
                       "next_owner": "human"}]}), encoding="utf-8")
-    result = plugin.on_session_start()
+    result = plugin.on_pre_llm_call(is_first_turn=True)
     assert result and "m_abc123abc123" in result["context"] and "2/2" in result["context"]
 
 
-def test_session_start_without_board_is_quiet(tmp_path, monkeypatch):
+def test_pre_llm_call_without_board_is_quiet(tmp_path, monkeypatch):
     monkeypatch.setenv("IACG_HOME", str(tmp_path))
-    assert plugin.on_session_start() is None
+    assert plugin.on_pre_llm_call(is_first_turn=True) is None
+
+
+def test_pre_llm_call_only_first_turn(tmp_path, monkeypatch):
+    monkeypatch.setenv("IACG_HOME", str(tmp_path))
+    (tmp_path / "board.json").write_text(json.dumps({"generated_at": "x", "missions": []}), encoding="utf-8")
+    assert plugin.on_pre_llm_call(is_first_turn=False) is None
+
+
+@pytest.mark.parametrize("action", ["approve", "confirm", "deliver"])
+def test_human_gate_actions_escalate_to_approval(action):
+    verdict = plugin.on_pre_tool_call(tool_name="iacg_mission", args={"action": action, "mission_id": "m_1"})
+    assert verdict and verdict["action"] == "approve"
+    assert verdict["rule_key"] == f"iacg-desk:{action}"
+
+
+@pytest.mark.parametrize("action", ["status", "pickup", "validate", "create", "package", "remember"])
+def test_non_gate_actions_not_escalated(action):
+    assert plugin.on_pre_tool_call(tool_name="iacg_mission", args={"action": action}) is None
+
+
+def test_tree_and_out_confined_to_work_dir(tmp_path, monkeypatch):
+    work = tmp_path / "iacg-work"
+    work.mkdir()
+    monkeypatch.setenv("IACG_WORK", str(work))
+    monkeypatch.setenv("IACG_SOCKET", "")
+    # inside the work dir -> accepted (resolved path passed through)
+    inside = work / "m_1"
+    assert plugin._confine(str(inside)) == str(inside.resolve())
+    # escaping the work dir -> rejected
+    assert plugin._confine(str(tmp_path / "elsewhere")) is None
+    assert plugin._confine(str(work / ".." / "secret")) is None
+    # the tool refuses an out-of-work tree/out before reaching the desk
+    assert "work dir" in plugin.handle_mission({"action": "validate", "mission_id": "m_1", "tree": str(tmp_path / "x")})
+    assert "work dir" in plugin.handle_mission({"action": "package", "mission_id": "m_1", "out": str(tmp_path / "x.zip")})

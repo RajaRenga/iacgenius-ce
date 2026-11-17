@@ -1,9 +1,11 @@
 """Hermes plugin for the IaC Genius CE desk.
 
-- `iacg_mission` tool: structured access to the desk (socket first, CLI fallback).
+- `iacg_mission` tool: structured access to the desk (socket first, CLI fallback). approve/confirm/deliver
+  are escalated to Hermes's human approval gate; model-supplied tree/out are confined to the work dir.
 - `iacg_templates` tool: read-only MCP grounding guidance — no template catalog ships.
-- on_session_start: surface the mission board summary the desk wrote.
-- pre_tool_call: HARD boundary — refuse `terraform apply`, `tofu apply` and cloud write commands.
+- pre_llm_call: surface the mission board summary the desk wrote (first turn).
+- pre_tool_call: HARD boundary — refuse `terraform apply`, `tofu apply` and cloud write commands, and
+  require a human approval for approve/confirm/deliver.
 
 local.json (gitignored) holds the socket path + data dir; env IACG_SOCKET / IACG_HOME override.
 """
@@ -27,12 +29,62 @@ def _settings() -> dict:
         data = json.loads((HERE / "local.json").read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         data = {}
+    home = os.environ.get("IACG_HOME") or data.get("home") or str(Path.home() / ".iacg")
     return {
         "python": os.environ.get("IACG_PYTHON") or data.get("python") or sys.executable,
         "src": os.environ.get("IACG_SRC") or data.get("src") or "",
-        "home": os.environ.get("IACG_HOME") or data.get("home") or str(Path.home() / ".iacg"),
+        "home": home,
         "socket": os.environ.get("IACG_SOCKET") or data.get("socket") or "",
+        "work": os.environ.get("IACG_WORK") or data.get("work") or str(Path(home).parent / "iacg-work"),
     }
+
+
+def _github_token() -> str | None:
+    """The delivery token, sourced through Hermes's profile-scoped secret route (rule 11), never a
+    bare os.environ read. Returns None when unavailable so delivery fails closed (NOT_RUN)."""
+    try:
+        from agent.secret_scope import get_secret
+        return (get_secret("IACG_GITHUB_TOKEN") or "").strip() or None
+    except Exception:
+        return None
+
+
+def _child_env(action: str | None = None) -> dict:
+    """Allowlisted environment for the CLI fallback — never dict(os.environ), which would forward
+    every Hermes provider key to the desk and on to terraform/tflint/checkov (rule 11). The delivery
+    token is added only for the deliver call, and the desk's tool_env() keeps it out of the tools."""
+    s = _settings()
+    keep = ("PATH", "HOME", "LANG", "LC_ALL", "USER", "LOGNAME", "SHELL", "TERM",
+            "SYSTEMROOT", "WINDIR", "TEMP", "TMP",
+            "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR", "TF_PLUGIN_CACHE_DIR")
+    env = {k: os.environ[k] for k in keep if k in os.environ}
+    env["IACG_HOME"] = s["home"]
+    env["PYTHONIOENCODING"] = "utf-8"
+    if s["src"]:
+        env["PYTHONPATH"] = s["src"] + os.pathsep + env.get("PYTHONPATH", "")
+    if action == "deliver":
+        token = _github_token()
+        if token:
+            env["IACG_GITHUB_TOKEN"] = token
+    return env
+
+
+def _confine(path_str) -> str | None:
+    """Resolve a model-supplied path and require it under the desk work dir (rule 13). Returns the
+    resolved path, or None if it escapes the work dir (the caller must reject it)."""
+    work = Path(_settings()["work"]).expanduser().resolve()
+    p = Path(str(path_str)).expanduser().resolve()
+    return str(p) if p.is_relative_to(work) else None
+
+
+def _confine_or_error(p: dict, key: str):
+    """(confined_value, None) for an absent/valid path, or (None, error) when it escapes the work dir."""
+    if not p.get(key):
+        return None, None
+    v = _confine(p[key])
+    if v is None:
+        return None, f"{key} must sit under the desk work dir ({_settings()['work']}); got {p[key]!r}"
+    return v, None
 
 
 def _socket_call(path: str, args: list, timeout: float) -> dict:
@@ -60,9 +112,7 @@ def _run(args: list, timeout: int = TIMEOUT) -> str:
         if rc != 0:
             return f"iacg {args[0]} failed (exit {rc}): {err[-1500:] or out[-1500:]}"
         return out or "(no output)"
-    env = dict(os.environ, IACG_HOME=s["home"], PYTHONIOENCODING="utf-8")
-    if s["src"]:
-        env["PYTHONPATH"] = s["src"] + os.pathsep + env.get("PYTHONPATH", "")
+    env = _child_env(args[0] if args else None)
     try:
         proc = subprocess.run([s["python"], "-m", "iacg_desk", *args], capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=timeout, env=env)
@@ -93,8 +143,11 @@ def handle_mission(params: dict, **_kwargs) -> str:
             return "create needs title (the user's request in a few words)"
         args = ["create", p["title"], "--provider", p.get("provider", "aws"),
                 "--iac-tool", p.get("iac_tool", "terraform"), "--build-tier", p.get("build_tier", "minimal")]
-        if p.get("tree"):
-            args += ["--tree", str(p["tree"])]
+        tree, err = _confine_or_error(p, "tree")
+        if err:
+            return err
+        if tree:
+            args += ["--tree", tree]
         if p.get("requirement"):
             args += ["--requirement", str(p["requirement"])]
         for key, value in (p.get("stated") or {}).items():
@@ -159,9 +212,15 @@ def handle_mission(params: dict, **_kwargs) -> str:
     if action == "brief":
         return _run(["brief", mid] + (["--json"] if p.get("json") else []))
     if action == "rules-check":
-        return _run(["rules-check", mid] + (["--tree", str(p["tree"])] if p.get("tree") else []))
+        tree, err = _confine_or_error(p, "tree")
+        if err:
+            return err
+        return _run(["rules-check", mid] + (["--tree", tree] if tree else []))
     if action == "validate":
-        return _run(["validate", mid] + (["--tree", str(p["tree"])] if p.get("tree") else []), timeout=1200)
+        tree, err = _confine_or_error(p, "tree")
+        if err:
+            return err
+        return _run(["validate", mid] + (["--tree", tree] if tree else []), timeout=1200)
     if action == "approve":
         if not p.get("by"):
             return "approve needs by: the human's name, in their words — the agent never approves for them"
@@ -174,7 +233,10 @@ def handle_mission(params: dict, **_kwargs) -> str:
             return "deliver needs repo (owner/name); the desk holds the token, gates first, reads the commit back"
         return _run(["deliver", mid, "--repo", str(p["repo"]), "--base", str(p.get("base", "main"))], timeout=900)
     if action == "package":
-        return _run(["package", mid] + (["--out", str(p["out"])] if p.get("out") else []), timeout=300)
+        out, err = _confine_or_error(p, "out")
+        if err:
+            return err
+        return _run(["package", mid] + (["--out", out] if out else []), timeout=300)
     return f"unhandled action {action}"
 
 
@@ -193,7 +255,9 @@ MISSION_SCHEMA = {
         "you never hunt for files; if the tree is gone it says so and points to regeneration. validate = run terraform fmt/init/validate, tflint, checkov and the secret scan "
         "over the mission tree; missing tools are NOT_RUN, never PASS. approve = record a NAMED human acceptance "
         "(delivery approval, or one soft finding by id) — only when the user explicitly said so. deliver = GitHub PR "
-        "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. package = sync "
+        "whose body is the ledger, VERIFIED only after read-back; needs the gates and a human approval. "
+        "approve/confirm/deliver each raise Hermes's human approval prompt — a person must grant them; the "
+        "agent cannot self-approve. tree/out paths are confined to the desk work dir. package = sync "
         "the work/ provenance folder (finalized decisions + who did what) and zip the whole mission folder to "
         "<workspace>/<mission_id>.zip for a single Files-tab download; the .tf stack stays at the folder root. "
         "KNOWLEDGE (declare once, reuse across missions): remember = store a durable profile fact (needs key, value, by; "
@@ -274,7 +338,11 @@ TEMPLATES_SCHEMA = {
 
 # ------------------------------------------------------------------ hooks
 
-def on_session_start(**_kwargs):
+def on_pre_llm_call(is_first_turn: bool = False, **_kwargs):
+    # Hermes ignores on_session_start return values; the board briefing reaches the model only via
+    # pre_llm_call context injection, on the first turn of a session.
+    if not is_first_turn:
+        return None
     try:
         snap = json.loads((Path(_settings()["home"]) / "board.json").read_text(encoding="utf-8"))
         lines = [f"[IaC Genius desk — mission board, snapshot {snap.get('generated_at')}]"]
@@ -318,8 +386,19 @@ def refused_command(command: str) -> str | None:
     return None
 
 
+_HUMAN_GATE_ACTIONS = {"approve", "confirm", "deliver"}
+
+
 def on_pre_tool_call(tool_name: str = "", args: dict | None = None, **_kwargs):
     args = args or {}
+    # approve / confirm / deliver are human decisions: escalate to Hermes's approval gate so a person
+    # must grant them (rule 12). The model may request, never self-approve; denial/timeout fails closed.
+    if tool_name == "iacg_mission" and args.get("action") in _HUMAN_GATE_ACTIONS:
+        act = args["action"]
+        return {"action": "approve",
+                "message": f"IaCGenius '{act}' is a human decision (acceptance / scope freeze / delivery). "
+                           "A person must approve it; the agent cannot grant it for them.",
+                "rule_key": f"iacg-desk:{act}"}
     command = args.get("command") or args.get("cmd") or ""
     if tool_name in SHELL_TOOLS or command:
         reason = refused_command(str(command))
@@ -333,5 +412,5 @@ def register(ctx):
                       description=MISSION_SCHEMA["description"], emoji="🏗️")
     ctx.register_tool(name="iacg_templates", toolset="iacg_desk", schema=TEMPLATES_SCHEMA, handler=handle_templates,
                       description=TEMPLATES_SCHEMA["description"], emoji="📚")
-    ctx.register_hook("on_session_start", on_session_start)
+    ctx.register_hook("pre_llm_call", on_pre_llm_call)
     ctx.register_hook("pre_tool_call", on_pre_tool_call)

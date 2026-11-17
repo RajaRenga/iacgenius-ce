@@ -12,7 +12,7 @@ import re
 import shutil
 import subprocess
 
-from . import __version__, ledger
+from . import __version__, ledger, tool_env
 from .store import now
 
 SECRET_PATTERNS = [
@@ -141,7 +141,7 @@ def run(store, mid, tree=None, runner=None, which=shutil.which):
     attempt = mission["attempts_spent"] + 1
     cache = store.data_dir / "plugins"
     cache.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, TF_PLUGIN_CACHE_DIR=str(cache), TF_IN_AUTOMATION="1", CHECKPOINT_DISABLE="1")
+    env = tool_env(TF_PLUGIN_CACHE_DIR=str(cache))
     packets = []
 
     def record(pkt):
