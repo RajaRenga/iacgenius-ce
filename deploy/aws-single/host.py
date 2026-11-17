@@ -72,7 +72,7 @@ def restore_state(cfg):
     if sync_enabled(cfg):
         restore_sync(cfg)
         return
-    for home, name in ((HERMES_HOME, 'hermes'), (DESK_HOME, 'iacg')):
+    for home, name in ((HERMES_HOME, 'hermes'), (DESK_HOME, 'iacg'), (WORK_HOME, 'iacg-work')):
         home.mkdir(parents=True, exist_ok=True)
         os.chown(home, UID, UID)
         if any(home.iterdir()):
@@ -83,7 +83,7 @@ def restore_state(cfg):
                               '--region', cfg['region'], '--only-show-errors'], capture_output=True, text=True)
         if got.returncode == 0 and archive.exists():
             run('tar', '-xzf', str(archive), '-C', str(home))
-            if home == DESK_HOME:
+            if home in (DESK_HOME, WORK_HOME):
                 run('chown', '-R', f'{UID}:{UID}', str(home))
             print(f'restored {name} state from S3')
         else:
@@ -287,10 +287,17 @@ WantedBy=multi-user.target
 
 CHECKPOINT = '''#!/bin/bash
 set -euo pipefail
-tar -czf /opt/iacgenius/hermes-state.tar.gz -C /data/hermes .
+# tar exits 1 when a file changes mid-read (the gateway is live); that is benign for a checkpoint.
+# Tolerate exit 1, abort on anything worse. Back up the workspace too, so a tarball restore keeps missions.
+rc=0; tar -czf /opt/iacgenius/hermes-state.tar.gz --warning=no-file-changed -C /data/hermes . || rc=$?
+[ "$rc" -le 1 ] || exit "$rc"
 aws s3 cp /opt/iacgenius/hermes-state.tar.gz s3://__BUCKET__/state/hermes.tar.gz --region __REGION__ --only-show-errors
-tar -czf /opt/iacgenius/iacg-state.tar.gz -C /data/iacg .
+rc=0; tar -czf /opt/iacgenius/iacg-state.tar.gz --warning=no-file-changed -C /data/iacg . || rc=$?
+[ "$rc" -le 1 ] || exit "$rc"
 aws s3 cp /opt/iacgenius/iacg-state.tar.gz s3://__BUCKET__/state/iacg.tar.gz --region __REGION__ --only-show-errors
+rc=0; tar -czf /opt/iacgenius/iacg-work.tar.gz --warning=no-file-changed --exclude='.terraform' --exclude='*.zip' --exclude='.modelkey.*' -C /data/iacg-work . || rc=$?
+[ "$rc" -le 1 ] || exit "$rc"
+aws s3 cp /opt/iacgenius/iacg-work.tar.gz s3://__BUCKET__/state/iacg-work.tar.gz --region __REGION__ --only-show-errors
 '''
 
 
